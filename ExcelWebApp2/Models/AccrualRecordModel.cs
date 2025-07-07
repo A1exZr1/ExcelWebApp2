@@ -1,9 +1,25 @@
-﻿namespace ExcelWebApp2.Models
+﻿using System.ComponentModel;
+
+namespace ExcelWebApp2.Models
 {
     public class AccrualRecordModel
     {
-        public string Article { get; set; } = string.Empty;
-        public double Revenue { get; set; }
-        public int Quantity { get; set; }
+        [Description("Артикул")]
+        public string ArticleName { get; set; } = string.Empty;
+
+        [Description("SKU")]
+        public string Sku { get; set; } = string.Empty;
+
+        [Description("Тип начисления")]
+        public string AccrualType { get; set; } = string.Empty;
+
+        [Description("Цена продавца")]
+        public string SellerCost { get; set; } = string.Empty;
+
+        [Description("Количество")]
+        public string Quantity { get; set; } = string.Empty;
+
+        [Description("Сумма итого, руб")]
+        public string SummaryValue { get; set; } = string.Empty;
     }
 }
