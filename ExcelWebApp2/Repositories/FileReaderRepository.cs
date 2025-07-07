@@ -139,7 +139,8 @@ namespace ExcelWebApp2.Repositories
                 {
                     ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.ArticleName)]),
                     MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.MaterialCost)]),
-                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.WorkCost)])
+                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.WorkCost)]),
+                    Total = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.Total)])
                 })
                 .ToList();
             return result;

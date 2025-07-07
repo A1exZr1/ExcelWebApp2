@@ -12,5 +12,8 @@ namespace ExcelWebApp2.Models
 
         [Description("Цена работы")]
         public string WorkCost { get; set; } = string.Empty;
+
+        [Description("Итого")]
+        public string Total { get; set; } = string.Empty;
     }
 }
