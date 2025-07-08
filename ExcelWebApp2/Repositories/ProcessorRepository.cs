@@ -27,12 +27,13 @@ namespace ExcelWebApp2.Repositories
             _primeCosts.Clear();
         }
 
-        public string? GetMissingInputs()
+        public string GetMissingInputs()
         {
-            if (_accruals.Count == 0) return "Accrual file is missing";
-            if (_ads.Count == 0) return "Advertising file is missing";
-            if (_primeCosts.Count == 0) return "Prime cost file is missing";
-            return null;
+            var result = string.Empty;
+            if (_accruals.Count == 0) result = "Accrual file is missing\n";
+            if (_ads.Count == 0) result += "Advertising file is missing\n";
+            if (_primeCosts.Count == 0) result += "Prime cost file is missing\n";
+            return result;
         }
 
         public List<ProcessedResultModel> Process()

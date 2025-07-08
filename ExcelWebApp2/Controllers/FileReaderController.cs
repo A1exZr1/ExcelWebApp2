@@ -59,8 +59,8 @@ namespace ExcelWebApp2.Controllers
             if (!processorRepository.HasAllInputs())
             {
                 var missing = processorRepository.GetMissingInputs();
-                if (missing != null) 
-                    return BadRequest("Not all input files have been uploaded. " + missing);
+                if (!string.IsNullOrEmpty(missing)) 
+                    return BadRequest("Not all input files have been uploaded.\n" + missing);
             }
 
             var results = processorRepository.Process();
