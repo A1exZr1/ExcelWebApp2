@@ -5,11 +5,13 @@
         public string ArticleName { get; set; } = string.Empty;
         public string Sku { get; set; } = string.Empty;
 
+        public decimal TotalSumm { get; set; }
+
         public decimal Revenue { get; set; }
         public decimal AdvertisingCost { get; set; }
         public decimal PrimeCost { get; set; }
 
-        public decimal NetProfit => Revenue - AdvertisingCost - PrimeCost; 
-        public decimal ProfitPercent => Revenue > 0 ? NetProfit / Revenue * 100 : 0;
+        public decimal NetProfit { get; set; }
+        public decimal? ProfitPercent { get; set; }
     }
 }

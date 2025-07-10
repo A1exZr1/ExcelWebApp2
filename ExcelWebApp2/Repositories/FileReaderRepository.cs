@@ -32,7 +32,7 @@ namespace ExcelWebApp2.Repositories
                 }
                 else
                 {
-                    throw new NotSupportedException($"Unsupported type {typeof(T).Name}");
+                    throw new NotSupportedException($"Не поддерживаемый тип {typeof(T).Name}");
                 }
 
 
@@ -41,18 +41,18 @@ namespace ExcelWebApp2.Repositories
                 {
                     result.Data = typedList;
                     result.Success = true;
-                    result.Message = $"Read {typedList.Count} rows.";
+                    result.Message = $"Прочитано {typedList.Count} строк.";
                 }
                 else
                 {
                     result.Success = false;
-                    result.Message = $"Failed to cast result to List<{typeof(T).Name}>";
+                    result.Message = $"Ошибка приведения результат к листу List<{typeof(T).Name}>";
                 }
             }
             catch (Exception ex)
             {
                 result.Success = false;
-                result.Message = $"Error due read file for {typeof(T).Name}: {ex.Message}";
+                result.Message = $"Ошибка во время чтения файла {typeof(T).Name}: {ex.Message}";
             }
             return result;
         }
@@ -64,18 +64,19 @@ namespace ExcelWebApp2.Repositories
             using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheets.First();
 
-            var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("File is empty.");
+            var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
 
             var headerCheckingRow = "ID начисления;Дата начисления;Группа услуг;Тип начисления;Артикул;SKU;Название товара;Количество;Цена продавца;Дата принятия заказа в обработку или оказания услуги;Схема работы;Вознаграждение Ozon, %;Индекс локализации, %;Среднее время доставки, часы;Сумма итого, руб";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Header of file doesn't fit to configurations header");
+                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
 
             var headerIndexes = GetHeaderIndexes<AccrualRecordModel>(headerRow);
 
             var result = rows
                 .Skip(1)
+                .Where(row => !string.IsNullOrEmpty(row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.ArticleName)])))
                 .Select(row => new AccrualRecordModel
                 {
                     ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.ArticleName)]),
@@ -95,13 +96,13 @@ namespace ExcelWebApp2.Repositories
             using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheets.First();
 
-            var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("File is empty.");
+            var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
 
             var headerCheckingRow = "SKU;Тип продвижения;ID кампании;Расход, ₽, с НДС;ДРР, %;Продажи, ₽;Заказы, шт;CTR, %;Показы;Клики;Стоимость заказа, ₽;Стоимость клика, ₽;Корзины;Конверсия в корзину, %";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Header of file doesn't fit to configurations header");
+                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
 
             var headerIndexes = GetHeaderIndexes<AdvertisingModel>(headerRow);
 
@@ -123,13 +124,13 @@ namespace ExcelWebApp2.Repositories
             using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheets.First();
 
-            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("File is empty.");
+            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст.");
             var headerRow = rows.First();
 
             var headerCheckingRow = "Артикул;Себестоимость материалов;Цена работы;Итого";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Header of file doesn't fit to configurations header");
+                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
 
             var headerIndexes = GetHeaderIndexes<PrimeCostModel>(headerRow);
 

@@ -1,7 +1,7 @@
 <template>
-  <div class="d-flex-column" style="width: 100%;">
-    <div class="d-flex-column" style="width: 100%;">
-      <div class="pl-3 pr-2 d-flex" style="width: 100%; height: 100px;">
+  <div class="d-flex" style="width: 100%;">
+      <div class="pl-3 pr-2 d-flex transition-width" 
+        :style="{ width: message ? '60%' : '100%' }">
         <v-file-input
           v-model="selectedFile"
           :label="'Выбрать '+ props.label"
@@ -11,77 +11,108 @@
           density="compact"
         />
       </div>
-      <div class="pl-2 pr-2 d-flex" style="width: 100%;">
-        <v-btn
-          color="primary"
-          :loading="isLoading"
-          :disabled="!selectedFile || isWrongFileSelected"
-          hide-details: true
-          @click="upload"
-          block
-        >
-          {{ 'Загрузить '+props.label }}
-        </v-btn>
+    <div class="d-flex pl-2 pr-2 mb-5" style="width: 40%;" v-if="message">
+          <template v-if="isMessageLong">
+            <v-tooltip location="top">
+              <template #activator="{ props: tooltipProps }">
+                <v-alert
+                  v-bind="tooltipProps"
+                  :type="alertType"
+                  variant="tonal"
+                  density="compact"
+                  hide-details
+                  class="ellipsis-alert"
+                >
+                  {{ shortMessage }}
+                </v-alert>
+              </template>
+              <span>{{ message }}</span>
+            </v-tooltip>
+          </template>
+          <v-alert
+            v-else
+            :type="alertType"
+            variant="tonal"
+            density="compact"
+            hide-details
+          >
+            {{ message }}
+          </v-alert>
       </div>
-      <div class="d-flex pl-2 pt-2 pr-2" style="width: 100%;">
-        <v-alert
-          v-if="message"
-          :type="alertType"
-          variant="tonal"
-          density="compact"
-          hide-details
-        >
-          {{ message }}
-        </v-alert>
-      </div>
-    </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
-
 
 const props = defineProps({
   label: String,
   endpoint: String
 });
 
-// Emits
-const emit = defineEmits(['uploaded', 'upload-complete'])
-const isLoading = ref(false)
 const selectedFile = ref<File | null>(null)
-const isWrongFileSelected = ref(false)
+const isBadFileSelected = ref(false)
 const message = ref('')
 const alertType = ref<'info' | 'success' | 'warning' | 'error'>('info')
+const shortMessage = computed(() => {
+  return message.value.length > 50
+    ? message.value.slice(0, 50) + '…'
+    : message.value
+})
+
+const isMessageLong = computed(() => {
+  return message.value.length > 50
+})
 
 watch(selectedFile, () => {
     message.value = ''
-    isWrongFileSelected.value = false
+    isBadFileSelected.value = false
 });
 
 async function upload() {
   if (!selectedFile.value) 
     return
 
-  isLoading.value = true;
   const formData = new FormData();
   formData.append('file', selectedFile.value);
   try {
     const response = await axios.post(props.endpoint!, formData);
     const count = response.data.count;
     message.value = `Загружено ${count} строк(и).`;
-    emit('upload-complete', count);
     alertType.value = 'success';
-    isWrongFileSelected.value = false;
-    emit('uploaded');
+    isBadFileSelected.value = false;
   } catch (error: any) {
-    message.value = `Ошибка: ${error?.response?.data || error.message}`
+    message.value = `${error?.response?.data || error.message}`
     alertType.value = 'error'
-    isWrongFileSelected.value = true; // Reset the file input
+    isBadFileSelected.value = true; // Reset the file input
   }
-  isLoading.value = false;
 }
+
+function resetData() {
+  selectedFile.value = null;
+  isBadFileSelected.value = false;
+  message.value = '';
+  alertType.value = 'info';
+}
+
+defineExpose({
+  upload,
+  resetData,
+  hasFile: computed(() => !!selectedFile.value),
+  isBadFileSelected: computed(() => isBadFileSelected.value)
+})
+
 </script>
+<style>
+  .transition-width {
+    transition: width 0.3s ease;
+  }
+
+  .ellipsis-alert {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+</style>

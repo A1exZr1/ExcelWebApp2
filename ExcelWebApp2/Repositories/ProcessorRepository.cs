@@ -30,14 +30,15 @@ namespace ExcelWebApp2.Repositories
             _accruals.Clear();
             _ads.Clear();
             _primeCosts.Clear();
+            _processedResults.Clear();
         }
 
         public string GetMissingInputs()
         {
             var result = string.Empty;
-            if (_accruals.Count == 0) result = "Accrual file is missing\n";
-            if (_ads.Count == 0) result += "Advertising file is missing\n";
-            if (_primeCosts.Count == 0) result += "Prime cost file is missing\n";
+            if (_accruals.Count == 0) result = "Файл начислений отсутствует\n";
+            if (_ads.Count == 0) result += "Файл рекламы отсутствует\n";
+            if (_primeCosts.Count == 0) result += "Файл себестоимости отсутствует\n";
             return result;
         }
 
@@ -50,7 +51,7 @@ namespace ExcelWebApp2.Repositories
                     var articleName = group.Key.ArticleName;
                     var sku = group.Key.Sku;
 
-                    decimal summary = group.Sum(x => decimal.TryParse(x.SummaryValue, out var v) ? v : 0);
+                    decimal summary = group.Sum(x => GetParsedDecimal(x.SummaryValue));
                     decimal revenue = group
                         .Where(x => x.AccrualType.Equals("выручка", StringComparison.OrdinalIgnoreCase))
                         .Sum(x => GetParsedDecimal(x.SellerCost));
@@ -61,16 +62,20 @@ namespace ExcelWebApp2.Repositories
 
                     decimal primeCost = _primeCosts
                         .Where(x => x.ArticleName == articleName)
-                        .Sum(x => GetParsedDecimal(x.MaterialCost) + GetParsedDecimal(x.WorkCost)
-                        );
+                        .Sum(x => GetParsedDecimal(x.Total));
+
+                    decimal netProfit = Math.Round(revenue - adCost - primeCost, 2);
 
                     return new ProcessedResultModel
                     {
                         ArticleName = articleName,
                         Sku = sku,
+                        TotalSumm = summary,
                         Revenue = revenue,
                         AdvertisingCost = adCost,
-                        PrimeCost = primeCost
+                        PrimeCost = primeCost,
+                        NetProfit = netProfit,
+                        ProfitPercent = revenue != 0 ? Math.Round((netProfit / revenue) * 100, 2) : null
                     };
                 })
                 .ToList();
@@ -90,7 +95,7 @@ namespace ExcelWebApp2.Repositories
 
             var result = decimal.TryParse(processedTextPrice, NumberStyles.Any, new NumberFormatInfo() { NumberDecimalSeparator = "." }, out var decimalPrice)
                 ? decimalPrice
-                : throw new Exception($"Value '{textPrice}' can't be parsed to the price amount");
+                : throw new Exception($"Значение '{textPrice}'не может быть конвертировано в цену");
 
             return isPriceInverted ? -Math.Round(result, 2) : Math.Round(result, 2);
         }

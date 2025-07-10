@@ -12,7 +12,7 @@ namespace ExcelWebApp2.Controllers
         public async Task<IActionResult> ReadAccrual( IFormFile file)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest("Файл не загружен.");
 
             var result = await fileReaderRepository.ReadExcelFile<AccrualRecordModel>(file);
 
@@ -27,7 +27,7 @@ namespace ExcelWebApp2.Controllers
         public async Task<IActionResult> ReadAdvertisment( IFormFile file)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest("Файл не загружен.");
 
             var result = await fileReaderRepository.ReadExcelFile<AdvertisingModel>(file);
 
@@ -42,7 +42,7 @@ namespace ExcelWebApp2.Controllers
         public async Task<IActionResult> ReadPrimeCostModel(IFormFile file)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest("Файл не загружен.");
 
             var result = await fileReaderRepository.ReadExcelFile<PrimeCostModel>(file);
 
@@ -60,7 +60,7 @@ namespace ExcelWebApp2.Controllers
             {
                 var missing = processorRepository.GetMissingInputs();
                 if (!string.IsNullOrEmpty(missing)) 
-                    return BadRequest("Not all input files have been uploaded.\n" + missing);
+                    return BadRequest("Не все входные файлы были загружены.\n" + missing);
             }
 
             var results = processorRepository.Process();
@@ -71,7 +71,7 @@ namespace ExcelWebApp2.Controllers
         public IActionResult Reset()
         {
             processorRepository.Clear();
-            return Ok(new { message = "All uploaded data has been cleared." });
+            return Ok(new { message = "Все загруженные данные были удалены." });
         }
 
         [HttpGet("ExportProcessedResults")]
