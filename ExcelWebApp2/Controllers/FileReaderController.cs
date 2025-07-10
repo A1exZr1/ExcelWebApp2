@@ -6,7 +6,7 @@ namespace ExcelWebApp2.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FileReaderController(FileReaderRepository fileReaderRepository, ProcessorRepository processorRepository) : ControllerBase
+    public class FileReaderController(FileReaderRepository fileReaderRepository, ProcessorRepository processorRepository, ExcelExportService excelExportService) : ControllerBase
     {
         [HttpPost("ReadAccrual")]
         public async Task<IActionResult> ReadAccrual( IFormFile file)
@@ -72,6 +72,21 @@ namespace ExcelWebApp2.Controllers
         {
             processorRepository.Clear();
             return Ok(new { message = "All uploaded data has been cleared." });
+        }
+
+        [HttpGet("ExportProcessedResults")]
+        public IActionResult ExportProcessedResults()
+        {
+            var results = processorRepository.GetLastProcessedResults();
+
+            if (results == null || !results.Any())
+                return BadRequest("Нет обработанных данных");
+
+            var stream = excelExportService.Export(results);
+
+            return File(stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "processed_results.xlsx");
         }
     }
 }

@@ -12,6 +12,7 @@ namespace ExcelWebApp2
             builder.Services.AddEndpointsApiExplorer(); // Required for Swagger
             builder.Services.AddScoped<FileReaderRepository>();
             builder.Services.AddSingleton<ProcessorRepository>();
+            builder.Services.AddScoped<ExcelExportService>();
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SupportNonNullableReferenceTypes();

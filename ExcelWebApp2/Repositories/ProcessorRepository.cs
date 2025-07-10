@@ -9,6 +9,7 @@ namespace ExcelWebApp2.Repositories
         private List<AccrualRecordModel> _accruals = [];
         private List<AdvertisingModel> _ads = [];
         private List<PrimeCostModel> _primeCosts = [];
+        private List<ProcessedResultModel> _processedResults = [];
         private static readonly Regex decimalParceRegex = new(@"\d*\.\d*\.\d*", RegexOptions.Compiled);
 
         public void SetAccruals(List<AccrualRecordModel> accruals) => _accruals = accruals;
@@ -18,6 +19,10 @@ namespace ExcelWebApp2.Repositories
         public bool HasAllInputs()
         {
             return _accruals.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0;
+        }
+        public List<ProcessedResultModel> GetLastProcessedResults()
+        {
+            return _processedResults;
         }
 
         public void Clear()
@@ -70,7 +75,8 @@ namespace ExcelWebApp2.Repositories
                 })
                 .ToList();
 
-            return result;
+            _processedResults = result;
+            return _processedResults;
         }
 
         protected static decimal GetParsedDecimal(string textPrice, bool isPriceInverted = false)
