@@ -23,15 +23,23 @@ namespace ExcelWebApp2
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ExcelWebApp2 v1");
+                    c.RoutePrefix = "swagger";
+                });
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
 
-            app.MapControllers();
+            app.UseDefaultFiles(); 
+            app.UseStaticFiles();
 
+            app.MapFallbackToFile("index.html");
+
+
+            app.MapControllers();
             app.Run();
         }
     }

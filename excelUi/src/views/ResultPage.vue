@@ -97,7 +97,7 @@ import { ref, computed, watch } from 'vue'
 import FileUploader from './FileUploader.vue';
 import { AgGridVue,  } from 'ag-grid-vue3'
 import { GridOptions, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community'
-import ResultGridItem from './ResultGridItem.ts'
+import ResultGridItem from './ResultGridItem'
 import axios from 'axios'
 
 const searchQuickFilterText = ref('');
