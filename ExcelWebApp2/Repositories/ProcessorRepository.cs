@@ -75,7 +75,7 @@ namespace ExcelWebApp2.Repositories
                     decimal? proportionalUnlinkedExpense = null;
                     if (totalSellerCost != 0 && skuSellerCostValue > 0)
                     {
-                        proportionalUnlinkedExpense = -Math.Round((skuSellerCostValue / totalSellerCost) * Math.Abs(unlinkedExpense), 2);
+                        proportionalUnlinkedExpense = -Math.Round((skuSellerCostValue / totalSellerCost) * Math.Abs(unlinkedExpense), 3);
                     }
 
                     var summary = group.Sum(x => GetParsedDecimal(x.SummaryValue));
@@ -96,7 +96,7 @@ namespace ExcelWebApp2.Repositories
                         .Select(x => (decimal?)GetParsedDecimal(x.Total) * quantity)
                         .FirstOrDefault();
 
-                    var netProfit = Math.Round(summary - adCost - (primeCost?? 0) + proportionalUnlinkedExpense?? 0, 2);
+                    var netProfit = Math.Round(summary - adCost - (primeCost?? 0) + proportionalUnlinkedExpense?? 0, 3);
 
                     return new ProcessedResultModel
                     {

@@ -355,7 +355,6 @@ async function onExportDataAsExcel() {
     // Convert proxies/class instances to plain objects
     const plainRows = JSON.parse(JSON.stringify(displayedRows.value))
 
-    console.log('Exporting plain rows:', plainRows)
     const response = await axios.post('/api/FileReader/ExportProcessedResultsFiltered', plainRows, {
       responseType: 'blob',
       headers: { 'Content-Type': 'application/json' },
