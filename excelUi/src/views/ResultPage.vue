@@ -173,7 +173,7 @@ const mainColumnDefs = [
   { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
   { field: 'sku', headerName: 'SKU', minWidth: 150 },
   {
-    field: 'totalSummary',
+    field: 'totalSumm',
     headerName: 'Поступило на счёт',
     minWidth: 150,
     filter: 'agNumberColumnFilter',
@@ -323,7 +323,6 @@ async function loadData() {
         ),
     )
     gridApi.value.setGridOption('rowData', rowMainData.value)
-    console.log('Данные успешно загружены', rowMainData.value)
     updateRowCounts()
   } catch (err) {
     console.error(err)

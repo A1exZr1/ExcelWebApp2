@@ -3,7 +3,7 @@ export default class ResultGridItem {
     public articleName: string,
     public sku: string,
     public quantity: number,
-    public totalSummary: number,
+    public totalSumm: number,
     public revenue: number,
     public advertisingCost: number,
     public primeCost: number | null,
