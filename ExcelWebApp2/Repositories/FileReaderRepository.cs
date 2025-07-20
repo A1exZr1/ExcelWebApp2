@@ -70,7 +70,7 @@ namespace ExcelWebApp2.Repositories
             var headerCheckingRow = "ID начисления;Дата начисления;Группа услуг;Тип начисления;Артикул;SKU;Название товара;Количество;Цена продавца;Дата принятия заказа в обработку или оказания услуги;Схема работы;Вознаграждение Ozon, %;Индекс локализации, %;Среднее время доставки, часы;Сумма итого, руб";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
+                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
 
             var headerIndexes = GetHeaderIndexes<AccrualRecordModel>(headerRow);
 
@@ -101,7 +101,7 @@ namespace ExcelWebApp2.Repositories
             var headerCheckingRow = "SKU;Тип продвижения;ID кампании;Расход, ₽, с НДС;ДРР, %;Продажи, ₽;Заказы, шт;CTR, %;Показы;Клики;Стоимость заказа, ₽;Стоимость клика, ₽;Корзины;Конверсия в корзину, %";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
+                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
 
             var headerIndexes = GetHeaderIndexes<AdvertisingModel>(headerRow);
 
@@ -129,7 +129,7 @@ namespace ExcelWebApp2.Repositories
             var headerCheckingRow = "Артикул;Себестоимость материалов;Цена работы;Итого";
 
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Заголовок файла не соответствует заголовку в конфигурации.");
+                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
 
             var headerIndexes = GetHeaderIndexes<PrimeCostModel>(headerRow);
 

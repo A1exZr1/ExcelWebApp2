@@ -65,6 +65,7 @@ namespace ExcelWebApp2.Repositories
                 );
 
             var result = _accruals
+                .Where(x => !string.IsNullOrEmpty(x.ArticleName))
                 .GroupBy(x => new { x.ArticleName, x.Sku })
                 .Select(group =>
                 {
