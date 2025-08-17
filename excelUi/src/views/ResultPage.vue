@@ -1,71 +1,34 @@
 <template>
   <div class="pt-4 pl-2 pr-2 pb-3 d-flex-column main-container" style="width: 100%; height: 100%">
-    <div class="d-flex header-section" style="width: 100%; height: 28%">
-      <div class="d-flex-column" style="width: 70%">
-        <FileUploader
-          label="файл начислений"
-          endpoint="/api/FileReader/ReadAccrual"
-          ref="accrualUploader"
-        />
-        <FileUploader
-          label="файл рекламы"
-          endpoint="/api/FileReader/ReadAdvertisment"
-          ref="adsUploader"
-        />
-        <FileUploader
-          label="файл себестоимости"
-          endpoint="/api/FileReader/PrimeCostModel"
-          ref="primeUploader"
-        />
-      </div>
-
-      <div class="pl-3 pr-2 d-flex-column" style="width: 30%">
-        <div class="pb-2 d-flex">
-          <div class="pr-2 d-flex" style="width: 50%">
+    <div class="d-flex header-section" style="width: 100%; height: 10%">
+      <div class="pl-3 pr-2 d-flex-column" style="width: 100%">
+        <div class="pb-3 pt-2 d-flex">
+          <div class="pr-2 d-flex" style="width: 60%">
+            <v-text-field
+              v-model="searchQuickFilterText"
+              variant="solo-filled"
+              label="Поиск в таблице"
+              prepend-icon="mdi-magnify"
+              clearable
+              hide-details
+              density="compact"
+            />
+          </div>
+          <div class="pr-2 d-flex" style="width: 20%">
             <v-btn
               color="primary"
               block
               hide-details:
               true
-              :disabled="!canUpload"
               class="small-btn-text"
               size="large"
               :loading="isLoading"
-              @click="loadAndProcessAll"
+              @click="onLoadAndProcessAll"
             >
-              Обработать
+              Выбрать файлы
             </v-btn>
           </div>
-          <div class="pl-2 d-flex" style="width: 50%">
-            <v-btn
-              color="red"
-              block
-              hide-details:
-              true
-              class="small-btn-text"
-              size="large"
-              @click="resetData"
-            >
-              Сброс
-            </v-btn>
-          </div>
-        </div>
-        <div class="pb-3 pt-3 d-flex">
-          <div class="pr-2 d-flex" style="width: 50%">
-            <v-btn
-              color="primary"
-              block
-              hide-details:
-              true
-              class="small-btn-text"
-              size="large"
-              :disabled="!hasRows"
-              @click="onExportDataAsCsv"
-            >
-              Экспорт (csv)
-            </v-btn>
-          </div>
-          <div class="pl-2 d-flex" style="width: 50%">
+          <div class="pl-2 d-flex" style="width: 20%">
             <v-btn
               color="primary"
               block
@@ -79,21 +42,23 @@
               Экспорт (xlsx)
             </v-btn>
           </div>
-        </div>
-        <div class="pb-3 pt-2 d-flex">
-          <v-text-field
-            v-model="searchQuickFilterText"
-            variant="solo-filled"
-            label="Поиск в таблице"
-            prepend-icon="mdi-magnify"
-            clearable
-            hide-details
-            density="compact"
-          />
+          <div class="pl-2 d-flex" style="width: 20%">
+            <v-btn
+              color="red"
+              block
+              hide-details:
+              true
+              class="small-btn-text"
+              size="large"
+              @click="resetData"
+            >
+              Сброс
+            </v-btn>
+          </div>
         </div>
       </div>
     </div>
-    <div class="pr-2 d-flex-column" style="width: 100%; height: 72%">
+    <div class="pr-2 d-flex-column" style="width: 100%; height: 90%">
       <div style="width: 100%; height: 95%">
         <ag-grid-vue
           class="ag-theme-alpine"
@@ -108,17 +73,22 @@
         Показано: {{ filteredRowCount }} из {{ totalRowCount }}
       </div>
     </div>
+    <file-selector-dialog
+      :isVisible="isFilesSelected"
+      @confirmed="onConfirmedLoadAndProcessAll"
+      @canceled="onConfirmedCancel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch } from 'vue'
-import FileUploader from './FileUploader.vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { GridOptions, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community'
 import ResultGridItem from './ResultGridItem'
 import axios from 'axios'
+import FileSelectorDialog from './FileSelectorDialog.vue'
 
 const searchQuickFilterText = ref('')
 const gridApi = ref<GridApi>()
@@ -126,25 +96,9 @@ const rowMainData = ref<ResultGridItem[]>([])
 const displayedRows = ref<ResultGridItem[]>([])
 const totalRowCount = ref(0)
 const filteredRowCount = ref(0)
-const accrualUploader = ref()
-const adsUploader = ref()
-const primeUploader = ref()
+
 const isLoading = ref(false)
-
-const canUpload = computed(
-  () =>
-    accrualUploader.value?.hasFile &&
-    adsUploader.value?.hasFile &&
-    primeUploader.value?.hasFile &&
-    !isAnyBadFileSelected.value,
-)
-
-const isAnyBadFileSelected = computed(
-  () =>
-    accrualUploader.value?.isBadFileSelected ||
-    adsUploader.value?.isBadFileSelected ||
-    primeUploader.value?.isBadFileSelected,
-)
+const isFilesSelected = ref(false)
 
 const hasRows = computed(() => rowMainData.value && rowMainData.value.length > 0)
 
@@ -280,7 +234,7 @@ async function onGridReady(event: GridReadyEvent) {
   updateRowCounts()
 }
 
-async function loadAndProcessAll() {
+/* async function loadAndProcessAll() {
   try {
     isLoading.value = true
     await Promise.all([
@@ -299,6 +253,19 @@ async function loadAndProcessAll() {
     console.error('Ошибка при загрузке файлов', err)
   }
   isLoading.value = false
+} */
+
+function onLoadAndProcessAll() {
+  isFilesSelected.value = true
+}
+
+function onConfirmedLoadAndProcessAll() {
+  isFilesSelected.value = false
+  loadData()
+}
+
+function onConfirmedCancel() {
+  isFilesSelected.value = false
 }
 
 async function loadData() {
@@ -328,17 +295,6 @@ async function loadData() {
     console.error(err)
     alert('Ошибка при получении результатов')
   }
-}
-
-function onExportDataAsCsv() {
-  if (!gridApi.value) return
-
-  const params = {
-    fileName: 'exported_data.csv',
-    columnKeys: mainColumnDefs.map((col) => col.field),
-  }
-
-  gridApi.value.exportDataAsCsv(params)
 }
 
 async function onExportDataAsExcel() {
@@ -383,10 +339,6 @@ async function resetData() {
   filteredRowCount.value = 0
   searchQuickFilterText.value = ''
   await ResetBackendData()
-
-  accrualUploader.value.resetData()
-  adsUploader.value.resetData()
-  primeUploader.value.resetData()
 }
 
 async function ResetBackendData() {

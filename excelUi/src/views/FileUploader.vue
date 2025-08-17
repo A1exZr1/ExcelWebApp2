@@ -1,43 +1,32 @@
 <template>
-  <div class="d-flex" style="width: 100%">
-    <div class="pl-3 pr-2 d-flex transition-width" :style="{ width: message ? '60%' : '100%' }">
+  <div class="d-flex flex-column" style="width: 100%">
+    <div class="pl-3 pr-2 d-flex transition-width" :style="{ width: message ? '100%' : '100%' }">
       <v-file-input
         v-model="selectedFile"
         :label="'Выбрать ' + props.label"
         accept=".xlsx, .xls"
         prepend-icon="mdi-file-excel"
-        hide-details:
-        true
         density="compact"
-      />
-    </div>
-    <div class="d-flex pl-2 pr-2 mb-5" style="width: 40%" v-if="message">
-      <template v-if="isMessageLong">
-        <v-tooltip location="top">
-          <template #activator="{ props: tooltipProps }">
-            <v-alert
-              v-bind="tooltipProps"
-              :type="alertType"
-              variant="tonal"
-              density="compact"
-              hide-details
-              class="ellipsis-alert"
-            >
-              {{ shortMessage }}
-            </v-alert>
-          </template>
-          <span>{{ message }}</span>
-        </v-tooltip>
-      </template>
-      <v-alert v-else :type="alertType" variant="tonal" density="compact" hide-details>
-        {{ message }}
-      </v-alert>
+        :error-messages="alertType === 'error' ? shortMessage : ''"
+        :hint="alertType === 'success' ? shortMessage : ''"
+        :persistent-hint="alertType === 'success'"
+      >
+        <template #append-inner>
+          <v-tooltip v-if="alertType === 'error' && isMessageLong" location="bottom">
+            <template #activator="{ props: tip }">
+              <v-icon v-bind="tip" size="18" class="ml-1" color="error"> mdi-alert-circle </v-icon>
+            </template>
+            <div style="max-width: 360px; white-space: pre-wrap">{{ message }}</div>
+          </v-tooltip>
+        </template>
+      </v-file-input>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint- */
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 
