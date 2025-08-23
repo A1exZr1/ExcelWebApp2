@@ -1,6 +1,6 @@
 ﻿namespace ExcelWebApp2.Models
 {
-    public class ProcessedResultModel
+    public class ProcessedOzonResultV1Model
     {
         public string ArticleName { get; set; } = string.Empty;
         public string Sku { get; set; } = string.Empty;

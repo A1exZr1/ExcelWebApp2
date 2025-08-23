@@ -2,7 +2,7 @@
 
 namespace ExcelWebApp2.Models
 {
-    public class AccrualRecordModel
+    public class AccrualRecordV1Model
     {
         [Description("Артикул")]
         public string ArticleName { get; set; } = string.Empty;

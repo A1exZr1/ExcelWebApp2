@@ -6,56 +6,66 @@ namespace ExcelWebApp2.Repositories
 {
     public class ProcessorRepository
     {
-        private List<AccrualRecordModel> _accruals = [];
+        private List<AccrualRecordV1Model> _accrualsV1 = [];
+        private List<AccrualRecordV2Model> _accrualsV2 = [];
         private List<AdvertisingModel> _ads = [];
         private List<PrimeCostModel> _primeCosts = [];
-        private List<ProcessedResultModel> _processedResults = [];
+        private List<ProcessedOzonResultV1Model> _processedResultsV1 = [];
+        private List<ProcessedOzonResultV2Model> _processedResultsV2 = [];
         private static readonly Regex decimalParceRegex = new(@"\d*\.\d*\.\d*", RegexOptions.Compiled);
 
-        public void SetAccruals(List<AccrualRecordModel> accruals) => _accruals = accruals;
+        public void SetAccrualsV1(List<AccrualRecordV1Model> accruals) => _accrualsV1 = accruals;
+        public void SetAccrualsV2(List<AccrualRecordV2Model> accruals) => _accrualsV2 = accruals;
         public void SetAds(List<AdvertisingModel> ads) => _ads = ads;
         public void SetPrimeCosts(List<PrimeCostModel> costs) => _primeCosts = costs;
 
         public bool HasAllInputs()
         {
-            return _accruals.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0;
+            return _accrualsV1.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0;
         }
-        public List<ProcessedResultModel> GetLastProcessedResults()
+        public List<ProcessedOzonResultV1Model> GetLastProcessedResults()
         {
-            return _processedResults;
+            return _processedResultsV1;
+        }
+
+        public List<ProcessedOzonResultV2Model> GetLastProcessedResultsV2()
+        {
+            return _processedResultsV2;
         }
 
         public void Clear()
         {
-            _accruals.Clear();
+            _accrualsV1.Clear();
+            _accrualsV2.Clear();
             _ads.Clear();
             _primeCosts.Clear();
-            _processedResults.Clear();
+            _processedResultsV1.Clear();
+            _processedResultsV2.Clear();
         }
 
         public string GetMissingInputs()
         {
             var result = string.Empty;
-            if (_accruals.Count == 0) result = "Файл начислений отсутствует\n";
+            if (_accrualsV1.Count == 0) result = "Файл начислений отсутствует\n";
             if (_ads.Count == 0) result += "Файл рекламы отсутствует\n";
             if (_primeCosts.Count == 0) result += "Файл себестоимости отсутствует\n";
             return result;
         }
 
-        public List<ProcessedResultModel> Process()
+        public List<ProcessedOzonResultV1Model> ProcessOzonV1()
         {
-            var unlinkedExpense = _accruals
+            var unlinkedExpense = _accrualsV1
                 .Where(x => string.IsNullOrWhiteSpace(x.ArticleName)
                     && !x.AccrualType.Equals("трафареты", StringComparison.CurrentCultureIgnoreCase)
                     && !x.AccrualType.Equals("продвижение с оплатой за заказ", StringComparison.CurrentCultureIgnoreCase))
                 .Sum(x => GetParsedDecimal(x.SummaryValue));
 
-            var totalSellerCost = _accruals
+            var totalSellerCost = _accrualsV1
                 .Where(x => !string.IsNullOrWhiteSpace(x.ArticleName)
                     && x.AccrualType.Equals("выручка", StringComparison.CurrentCultureIgnoreCase))
                 .Sum(x => GetParsedDecimal(x.SellerCost));
 
-            var skuSellerCost = _accruals
+            var skuSellerCost = _accrualsV1
                 .Where(x => !string.IsNullOrWhiteSpace(x.ArticleName)
                     && x.AccrualType.Equals("выручка", StringComparison.CurrentCultureIgnoreCase))
                 .GroupBy(x => x.Sku)
@@ -64,7 +74,7 @@ namespace ExcelWebApp2.Repositories
                     g => g.Sum(x => GetParsedDecimal(x.SellerCost))
                 );
 
-            var result = _accruals
+            var result = _accrualsV1
                 .Where(x => !string.IsNullOrEmpty(x.ArticleName))
                 .GroupBy(x => new { x.ArticleName, x.Sku })
                 .Select(group =>
@@ -99,7 +109,7 @@ namespace ExcelWebApp2.Repositories
 
                     var netProfit = Math.Round(summary - adCost - (primeCost?? 0) + proportionalUnlinkedExpense?? 0, 3);
 
-                    return new ProcessedResultModel
+                    return new ProcessedOzonResultV1Model
                     {
                         ArticleName = articleName,
                         Sku = sku,
@@ -115,8 +125,124 @@ namespace ExcelWebApp2.Repositories
                 })
                 .ToList();
 
-            _processedResults = result;
-            return _processedResults;
+            _processedResultsV1 = result;
+            return _processedResultsV1;
+        }
+
+        public List<ProcessedOzonResultV2Model> ProcessOzonV2()
+        {
+            var unlinkedExpense = _accrualsV2
+                .Where(x => string.IsNullOrWhiteSpace(x.ArticleName))
+                .Sum(x => GetParsedDecimal(x.PreCommissionAmount));
+
+            var filterTypes = _accrualsV2
+                .Select(x => x.AccrualType)
+                .Where(x => !string.IsNullOrWhiteSpace(x) && x != "Доставка покупателю")
+                .Distinct()
+                .ToList();
+
+            var totalPreComissionCost = _accrualsV2
+                .Where(x => !string.IsNullOrWhiteSpace(x.ArticleName)
+                    && x.AccrualType.Equals("Доставка покупателю", StringComparison.CurrentCultureIgnoreCase))
+                .Sum(x => GetParsedDecimal(x.PreCommissionAmount));
+
+            var skuPreComissionCost = _accrualsV2
+                .Where(x => !string.IsNullOrWhiteSpace(x.ArticleName)
+                    && x.AccrualType.Equals("Доставка покупателю", StringComparison.CurrentCultureIgnoreCase))
+                .GroupBy(x => x.Sku)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => GetParsedDecimal(x.PreCommissionAmount))
+                );
+
+            var result = _accrualsV2
+                .Where(x => !string.IsNullOrEmpty(x.ArticleName))
+                .GroupBy(x => new { x.ArticleName, x.Sku })
+                .Select(group =>
+                {
+                    var articleName = group.Key.ArticleName;
+                    var sku = group.Key.Sku;
+
+                    skuPreComissionCost.TryGetValue(sku, out decimal skuSellerCostValue);
+                    decimal? proportionalUnlinkedExpense = null;
+                    
+                    if (totalPreComissionCost != 0 && skuSellerCostValue > 0)
+                    {
+                        proportionalUnlinkedExpense = -Math.Round((skuSellerCostValue / totalPreComissionCost) * Math.Abs(unlinkedExpense), 3);
+                    }
+
+                    var quantity = group
+                        .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
+                        .Count();
+                    
+                    var (WorkCost, MaterialCost) = GetPrimeCosts(articleName, quantity);
+
+                    var ozonFee = group
+                        .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
+                        .Sum(x => GetParsedDecimal(x.OzonFee));
+
+                    var handlingFee = group
+                        .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
+                        .Sum(x => GetParsedDecimal(x.HandlingFee));
+
+                    var lastMileFee = group
+                        .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
+                        .Sum(x => GetParsedDecimal(x.LastMileFee));
+
+                    var logisticsFee = group
+                        .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
+                        .Sum(x => GetParsedDecimal(x.LogisticsFee));
+
+                    var additionalFees = new Dictionary<string, decimal>();
+
+                    foreach (var type in filterTypes)
+                    {
+                        var feeSum = group
+                            .Where(x => x.AccrualType.Equals(type, StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.TotalAmount));
+
+                        if (feeSum != 0)
+                        {
+                            additionalFees[type] = feeSum;
+                        }
+                    }
+
+                    var additionalFeesTotal = additionalFees.Values.Sum();
+
+                    var netProfit = Math.Round(skuSellerCostValue - (WorkCost ?? 0 + MaterialCost ?? 0) + (proportionalUnlinkedExpense ?? 0) + ozonFee + handlingFee + lastMileFee + logisticsFee + additionalFeesTotal, 3);
+
+                    return new ProcessedOzonResultV2Model
+                    {
+                        ArticleName = articleName,
+                        Sku = sku,
+                        Warehouse = group.FirstOrDefault(x => x.AccrualType == "Доставка покупателю")?.Warehouse ?? "Не определён",
+                        PreCommissionAmount = skuSellerCostValue,
+                        Quantity = quantity,
+                        WorkCost = WorkCost,
+                        MaterialCost = MaterialCost,
+                        NetProfit = netProfit,
+                        OzonFee = ozonFee,
+                        HandlingFee = handlingFee,
+                        LastMileFee = lastMileFee,
+                        LogisticsFee = logisticsFee,
+                        UnlinkedExpenses = proportionalUnlinkedExpense ?? 0,
+                        ProfitPercent = skuSellerCostValue != 0 ? Math.Round((netProfit / Math.Abs(skuSellerCostValue)) * 100, 2) : null,
+                        AdditionalFees = additionalFees
+                    };
+                })
+                .ToList();
+
+            _processedResultsV2 = result;
+            return _processedResultsV2;
+        }
+
+        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeCosts(string articleName, int quantity)
+        {
+            var primeCost = _primeCosts
+                .Where(x => x.ArticleName == articleName)
+                .FirstOrDefault();
+
+            return primeCost is null ? (null, null) : (GetParsedDecimal(primeCost.WorkCost) * quantity, GetParsedDecimal(primeCost.MaterialCost) * quantity);
         }
 
         protected static decimal GetParsedDecimal(string textPrice, bool isPriceInverted = false)

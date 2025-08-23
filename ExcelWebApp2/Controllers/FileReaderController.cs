@@ -8,18 +8,33 @@ namespace ExcelWebApp2.Controllers
     [Route("api/[controller]")]
     public class FileReaderController(FileReaderRepository fileReaderRepository, ProcessorRepository processorRepository, ExcelExportService excelExportService) : ControllerBase
     {
-        [HttpPost("ReadAccrual")]
-        public async Task<IActionResult> ReadAccrual( IFormFile file)
+        [HttpPost("ReadAccrualV1")]
+        public async Task<IActionResult> ReadAccrualV1( IFormFile file)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Файл не загружен.");
 
-            var result = await fileReaderRepository.ReadExcelFile<AccrualRecordModel>(file);
+            var result = await fileReaderRepository.ReadExcelFile<AccrualRecordV1Model>(file);
 
             if (!result.Success)
                 return BadRequest(result.Message);
 
-            processorRepository.SetAccruals(result.Data);
+            processorRepository.SetAccrualsV1(result.Data);
+            return Ok(new { count = result.Data.Count, message = result.Message });
+        }
+
+        [HttpPost("ReadAccrualV2")]
+        public async Task<IActionResult> ReadAccrualV2(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Файл не загружен.");
+
+            var result = await fileReaderRepository.ReadExcelFile<AccrualRecordV2Model>(file);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            processorRepository.SetAccrualsV2(result.Data);
             return Ok(new { count = result.Data.Count, message = result.Message });
         }
 
@@ -53,8 +68,8 @@ namespace ExcelWebApp2.Controllers
             return Ok(new { count = result.Data.Count, message = result.Message });
         }
 
-        [HttpGet("GetProcessedResults")]
-        public IActionResult GetResults()
+        [HttpGet("GetOzonV1Results")]
+        public IActionResult GetOzonV1Results()
         {
             if (!processorRepository.HasAllInputs())
             {
@@ -63,7 +78,21 @@ namespace ExcelWebApp2.Controllers
                     return BadRequest("Не все входные файлы были загружены.\n" + missing);
             }
 
-            var results = processorRepository.Process();
+            var results = processorRepository.ProcessOzonV1();
+            return Ok(results);
+        }
+
+        [HttpGet("GetOzonV2Results")]
+        public IActionResult GetOzonV2Results()
+        {
+            if (!processorRepository.HasAllInputs())
+            {
+                var missing = processorRepository.GetMissingInputs();
+                if (!string.IsNullOrEmpty(missing))
+                    return BadRequest("Не все входные файлы были загружены.\n" + missing);
+            }
+
+            var results = processorRepository.ProcessOzonV2();
             return Ok(results);
         }
 
@@ -75,7 +104,7 @@ namespace ExcelWebApp2.Controllers
         }
 
         [HttpPost("ExportProcessedResultsFiltered")]
-        public IActionResult ExportProcessedResultsFiltered([FromBody] List<ProcessedResultModel> rows)
+        public IActionResult ExportProcessedResultsFiltered([FromBody] List<ProcessedOzonResultV1Model> rows)
         {
             if (rows == null || rows.Count == 0)
                 return BadRequest("Нет обработанных данных");

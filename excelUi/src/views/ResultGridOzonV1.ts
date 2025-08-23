@@ -1,4 +1,4 @@
-export default class ResultGridItem {
+export default class ResultGridOzonV1 {
   constructor(
     public articleName: string,
     public sku: string,
@@ -6,7 +6,8 @@ export default class ResultGridItem {
     public totalSumm: number,
     public revenue: number,
     public advertisingCost: number,
-    public primeCost: number | null,
+    public workCost: number | null,
+    public materialCost: number | null,
     public unlinkedExpenses: number,
     public netProfit: number,
     public profitPercent: number,

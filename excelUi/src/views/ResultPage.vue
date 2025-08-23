@@ -23,7 +23,7 @@
               class="small-btn-text"
               size="large"
               :loading="isLoading"
-              @click="onLoadAndProcessAll"
+              @click="onSelectFiles"
             >
               Выбрать файлы
             </v-btn>
@@ -74,7 +74,8 @@
       </div>
     </div>
     <file-selector-dialog
-      :isVisible="isFilesSelected"
+      :isVisible="isFileSelectorVisible"
+      ref="activeTab"
       @confirmed="onConfirmedLoadAndProcessAll"
       @canceled="onConfirmedCancel"
     />
@@ -86,19 +87,22 @@
 import { ref, computed, watch } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { GridOptions, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community'
-import ResultGridItem from './ResultGridItem'
+import ResultGridOzonV1 from './ResultGridOzonV1'
+import ResultGridOzonV2 from './ResultGridOzonV2'
 import axios from 'axios'
 import FileSelectorDialog from './FileSelectorDialog.vue'
 
 const searchQuickFilterText = ref('')
 const gridApi = ref<GridApi>()
-const rowMainData = ref<ResultGridItem[]>([])
-const displayedRows = ref<ResultGridItem[]>([])
+const rowMainData = ref<ResultGridOzonV1[]>([])
+const displayedRows = ref<ResultGridOzonV1[]>([])
 const totalRowCount = ref(0)
 const filteredRowCount = ref(0)
+const mainColumnDefs = ref<ColDef<any, any>[]>([])
 
 const isLoading = ref(false)
-const isFilesSelected = ref(false)
+const isFileSelectorVisible = ref(false)
+const activeTab = ref()
 
 const hasRows = computed(() => rowMainData.value && rowMainData.value.length > 0)
 
@@ -123,69 +127,7 @@ function onFilterChanged() {
   updateRowCounts()
 }
 
-const mainColumnDefs = [
-  { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
-  { field: 'sku', headerName: 'SKU', minWidth: 150 },
-  {
-    field: 'totalSumm',
-    headerName: 'Поступило на счёт',
-    minWidth: 150,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'quantity',
-    headerName: 'Количество продаж',
-    minWidth: 80,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'revenue',
-    headerName: 'Выручка',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'advertisingCost',
-    headerName: 'Расходы на рекламу',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'unlinkedExpenses',
-    headerName: 'Нераспределённые расходы',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'primeCost',
-    headerName: 'Себестоимость',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'netProfit',
-    headerName: 'Чистая прибыль',
-    minWidth: 130,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'profitPercent',
-    headerName: '% от выручки',
-    minWidth: 130,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => (params.value != null ? `${params.value.toFixed(2)}%` : 'н/д'),
-  },
-]
-
 const gridOptions: GridOptions = {
-  columnDefs: mainColumnDefs as ColDef<any, any>[],
   rowClassRules: {
     'red-row': (params: RowClassParams) => params.data?.primeCost == null,
   },
@@ -255,35 +197,43 @@ async function onGridReady(event: GridReadyEvent) {
   isLoading.value = false
 } */
 
-function onLoadAndProcessAll() {
-  isFilesSelected.value = true
+function onSelectFiles() {
+  isFileSelectorVisible.value = true
 }
 
 function onConfirmedLoadAndProcessAll() {
-  isFilesSelected.value = false
-  loadData()
+  isFileSelectorVisible.value = false
+  if (activeTab.value === 'ozon1') {
+    gridApi.value?.setGridOption('columnDefs', mainColumnDefsOzonV1)
+    loadProcessedOzonV1Data()
+  } else {
+    mainColumnDefs.value = mainColumnDefsOzonV2
+    gridApi.value?.setGridOption('columnDefs', mainColumnDefs.value)
+    loadProcessedOzonV2Data()
+  }
 }
 
 function onConfirmedCancel() {
-  isFilesSelected.value = false
+  isFileSelectorVisible.value = false
 }
 
-async function loadData() {
+async function loadProcessedOzonV1Data() {
   if (!gridApi.value) return
 
   try {
-    const response = await axios.get('/api/FileReader/GetProcessedResults')
+    const response = await axios.get('/api/FileReader/GetOzonV1Results')
 
     rowMainData.value = response.data.map(
       (item: any) =>
-        new ResultGridItem(
+        new ResultGridOzonV1(
           item.articleName,
           item.sku,
           item.quantity,
           item.totalSumm,
           item.revenue,
           item.advertisingCost,
-          item.primeCost,
+          item.workCost,
+          item.materialCost,
           item.unlinkedExpenses,
           item.netProfit,
           item.profitPercent,
@@ -296,6 +246,141 @@ async function loadData() {
     alert('Ошибка при получении результатов')
   }
 }
+
+async function loadProcessedOzonV2Data() {
+  if (!gridApi.value) return
+
+  try {
+    const response = await axios.get('/api/FileReader/GetOzonV1Results')
+
+    rowMainData.value = response.data.map(
+      (item: any) =>
+        new ResultGridOzonV2(
+          item.articleName,
+          item.sku,
+          item.warehouse,
+          item.preCommissionAmount,
+          item.quantity,
+          item.workCost,
+          item.materialCost,
+          item.unlinkedExpenses,
+
+          item.ozonFee,
+          item.handlingFee,
+          item.lastMileFee,
+          item.logisticFee,
+          item.netProfit,
+          item.profitPercent,
+        ),
+    )
+    gridApi.value.setGridOption('rowData', rowMainData.value)
+    updateRowCounts()
+  } catch (err) {
+    console.error(err)
+    alert('Ошибка при получении результатов')
+  }
+}
+
+const mainColumnDefsOzonV1 = [
+  { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
+  { field: 'sku', headerName: 'SKU', minWidth: 150 },
+  {
+    field: 'totalSumm',
+    headerName: 'Поступило на счёт',
+    minWidth: 150,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'quantity',
+    headerName: 'Количество продаж',
+    minWidth: 80,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'revenue',
+    headerName: 'Выручка',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'advertisingCost',
+    headerName: 'Расходы на рекламу',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'unlinkedExpenses',
+    headerName: 'Нераспределённые расходы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'workCost',
+    headerName: 'Стоимость работы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'materialCost',
+    headerName: 'Стоимость материалов',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'netProfit',
+    headerName: 'Чистая прибыль',
+    minWidth: 130,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'profitPercent',
+    headerName: '% от выручки',
+    minWidth: 130,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => (params.value != null ? `${params.value.toFixed(2)}%` : 'н/д'),
+  },
+] as const satisfies ColDef[]
+
+const mainColumnDefsOzonV2 = [
+  { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
+  { field: 'sku', headerName: 'SKU', minWidth: 150 },
+  {
+    field: 'totalSumm',
+    headerName: 'Поступило на счёт',
+    minWidth: 150,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'quantity',
+    headerName: 'Количество продаж',
+    minWidth: 80,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'unlinkedExpenses',
+    headerName: 'Нераспределённые расходы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'primeCost',
+    headerName: 'Себестоимость',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+] as const satisfies ColDef[]
 
 async function onExportDataAsExcel() {
   if (!gridApi.value) return

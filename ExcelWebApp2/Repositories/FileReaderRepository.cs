@@ -18,7 +18,7 @@ namespace ExcelWebApp2.Repositories
                 using var stream = file.OpenReadStream();
                 object rawResult;
 
-                if (typeof(T) == typeof(AccrualRecordModel))
+                if (typeof(T) == typeof(AccrualRecordV1Model))
                 {
                     rawResult = await Task.Run(() => ReadAccruals(stream));
                 }
@@ -29,6 +29,10 @@ namespace ExcelWebApp2.Repositories
                 else if (typeof(T) == typeof(PrimeCostModel))
                 {
                     rawResult = await Task.Run(() => ReadPrimeCost(stream));
+                }
+                else if (typeof(T) == typeof(AccrualRecordV2Model))
+                {
+                    rawResult = await Task.Run(() => ReadAccrualsV2(stream));
                 }
                 else
                 {
@@ -57,8 +61,44 @@ namespace ExcelWebApp2.Repositories
             return result;
         }
 
+        private static List<AccrualRecordV2Model> ReadAccrualsV2(Stream stream)
+        {
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
 
-        private static List<AccrualRecordModel> ReadAccruals(Stream stream)
+            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст");
+            var headerRow = rows.First();
+
+            var headerCheckingRow = "Дата начисления;Тип начисления;Номер отправления или идентификатор услуги;Дата принятия заказа в обработку или оказания услуги;Склад отгрузки;SKU;Артикул;Название товара или услуги;Количество;За продажу или возврат до вычета комиссий и услуг;Вознаграждение Ozon, %;Вознаграждение Ozon;Сборка заказа;Обработка отправления (Drop-off/Pick-up) (разбивается по товарам пропорционально количеству в отправлении);Магистраль;Последняя миля (разбивается по товарам пропорционально доле цены товара в сумме отправления);Обратная магистраль;Обработка возврата;Обработка отмененного или невостребованного товара (разбивается по товарам в отправлении в одинаковой пропорции);Обработка невыкупленного товара;Логистика;Индекс локализации;Среднее время доставки, часы;Обратная логистика;Итого, руб.";
+
+            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
+                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
+
+            var headerIndexes = GetHeaderIndexes<AccrualRecordV2Model>(headerRow);
+
+            var result = rows
+                .Skip(1)
+                .Select(row => new AccrualRecordV2Model
+                {
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.ArticleName)]),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Sku)]),
+                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.AccrualType)]),
+                    Warehouse = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Warehouse)]),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Quantity)]),
+                    PreCommissionAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.PreCommissionAmount)]),
+                    OzonFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.OzonFee)]),
+                    HandlingFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.HandlingFee)]),
+                    LastMileFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LastMileFee)]),
+                    LogisticsFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LogisticsFee)]),
+                    TotalAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.TotalAmount)])
+                })
+                .ToList();
+
+            return result;
+        }   
+
+
+        private static List<AccrualRecordV1Model> ReadAccruals(Stream stream)
         {
 
             using var workbook = new XLWorkbook(stream);
@@ -72,18 +112,18 @@ namespace ExcelWebApp2.Repositories
             if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
                 throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
 
-            var headerIndexes = GetHeaderIndexes<AccrualRecordModel>(headerRow);
+            var headerIndexes = GetHeaderIndexes<AccrualRecordV1Model>(headerRow);
 
             var result = rows
                 .Skip(1)
-                .Select(row => new AccrualRecordModel
+                .Select(row => new AccrualRecordV1Model
                 {
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.ArticleName)]),
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.Sku)]),
-                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.AccrualType)]),
-                    SellerCost = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.SellerCost)]),
-                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.Quantity)]),
-                    SummaryValue = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordModel.SummaryValue)]),
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.ArticleName)]),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Sku)]),
+                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.AccrualType)]),
+                    SellerCost = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SellerCost)]),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Quantity)]),
+                    SummaryValue = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SummaryValue)]),
                 })
                 .ToList();
             return result;

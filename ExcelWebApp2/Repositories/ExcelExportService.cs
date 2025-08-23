@@ -5,7 +5,7 @@ namespace ExcelWebApp2.Repositories
 {
     public class ExcelExportService
     {
-        public MemoryStream Export(List<ProcessedResultModel> data)
+        public MemoryStream Export(List<ProcessedOzonResultV1Model> data)
         {
             var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Results");

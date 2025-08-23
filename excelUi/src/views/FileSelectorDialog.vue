@@ -20,8 +20,8 @@
               <FileUploader
                 class="pb-2"
                 label="файл начислений"
-                endpoint="/api/FileReader/ReadAccrual"
-                ref="accrualUploader"
+                endpoint="/api/FileReader/ReadAccrualV1"
+                ref="accrualUploader1"
               />
               <FileUploader
                 class="pb-2"
@@ -32,11 +32,28 @@
               <FileUploader
                 label="файл себестоимости"
                 endpoint="/api/FileReader/PrimeCostModel"
-                ref="primeUploader"
+                ref="primeUploader1"
               />
             </div>
           </v-tabs-window-item>
-          <v-tabs-window-item style="height: 100%" value="ozon2"> </v-tabs-window-item>
+          <v-tabs-window-item style="height: 100%" value="ozon2">
+            <div
+              class="d-flex flex-column pa-2"
+              style="width: 100%; height: 100%; overflow-y: auto"
+            >
+              <FileUploader
+                class="pb-2"
+                label="файл отчёта по товарам"
+                endpoint="/api/FileReader/ReadAccrualV2"
+                ref="accrualUploader2"
+              />
+              <FileUploader
+                label="файл себестоимости"
+                endpoint="/api/FileReader/PrimeCostModel"
+                ref="primeUploader2"
+              />
+            </div>
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-container>
       <v-card-actions>
@@ -63,9 +80,11 @@ import { ref, watch, computed } from 'vue'
 import FileUploader from './FileUploader.vue'
 
 const activeTab = ref<string>('ozon1')
-const accrualUploader = ref()
+const accrualUploader1 = ref()
+const accrualUploader2 = ref()
 const adsUploader = ref()
-const primeUploader = ref()
+const primeUploader1 = ref()
+const primeUploader2 = ref()
 const isLoading = ref(false)
 
 const props = defineProps({
@@ -74,18 +93,29 @@ const props = defineProps({
 
 const isAnyBadFileSelected = computed(
   () =>
-    accrualUploader.value?.isBadFileSelected ||
+    accrualUploader1.value?.isBadFileSelected ||
+    accrualUploader2.value?.isBadFileSelected ||
     adsUploader.value?.isBadFileSelected ||
-    primeUploader.value?.isBadFileSelected,
+    primeUploader1.value?.isBadFileSelected,
+  primeUploader2.value?.isBadFileSelected,
 )
 
-const canUpload = computed(
-  () =>
-    accrualUploader.value?.hasFile &&
-    adsUploader.value?.hasFile &&
-    primeUploader.value?.hasFile &&
-    !isAnyBadFileSelected.value,
-)
+const canUpload = computed(() => {
+  if (activeTab.value === 'ozon1') {
+    return (
+      accrualUploader1.value?.hasFile &&
+      adsUploader.value?.hasFile &&
+      primeUploader1.value?.hasFile &&
+      !isAnyBadFileSelected.value
+    )
+  } else {
+    return (
+      accrualUploader2.value?.hasFile &&
+      primeUploader2.value?.hasFile &&
+      !isAnyBadFileSelected.value
+    )
+  }
+})
 
 const emit = defineEmits(['confirmed', 'canceled'])
 
@@ -95,30 +125,42 @@ watch(props, (newValue) => {
 })
 
 async function onConfirmClick() {
-  if (activeTab.value !== 'ozon1') {
-    emit('confirmed')
-    return
-  }
-
   if (!canUpload.value) return
 
-  try {
-    isLoading.value = true
-    await Promise.all([
-      accrualUploader.value?.upload(),
-      adsUploader.value?.upload(),
-      primeUploader.value?.upload(),
-    ])
-    if (isAnyBadFileSelected.value) return
-    emit('confirmed')
-  } finally {
-    isLoading.value = false
+  if (activeTab.value == 'ozon1') {
+    try {
+      isLoading.value = true
+      await Promise.all([
+        accrualUploader1.value?.upload(),
+        adsUploader.value?.upload(),
+        primeUploader1.value?.upload(),
+      ])
+      if (isAnyBadFileSelected.value) return
+      emit('confirmed')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  if (activeTab.value == 'ozon2') {
+    try {
+      isLoading.value = true
+      await Promise.all([accrualUploader2.value?.upload(), primeUploader2.value?.upload()])
+      if (isAnyBadFileSelected.value) return
+      emit('confirmed')
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 
 function onCancelClick() {
   emit('canceled')
 }
+
+defineExpose({
+  activeTab,
+})
 </script>
 
 <style lang="scss">
