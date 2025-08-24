@@ -325,7 +325,14 @@ function updatePinnedTotals(visibleOnly = true) {
 }
 
 const mainColumnDefsOzonV1 = [
-  { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
+  {
+    field: 'articleName',
+    headerName: 'Имя артикула',
+    minWidth: 300,
+    sort: 'asc',
+    sortIndex: 0,
+    pinned: 'left',
+  },
   { field: 'sku', headerName: 'SKU', minWidth: 140, maxWidth: 150 },
   {
     field: 'totalSumm',
@@ -400,12 +407,13 @@ function buildOzonV2Columns(feeKeys: string[]): ColDef[] {
       minWidth: 300,
       sort: 'asc' as const,
       sortIndex: 0,
+      pinned: 'left',
     },
     { field: 'sku', headerName: 'SKU', minWidth: 140, maxWidth: 150 },
     { field: 'warehouse', headerName: 'Склад', minWidth: 130, maxWidth: 150 },
     {
       field: 'preCommissionAmount',
-      headerName: 'Сумма до вычета комиссии',
+      headerName: 'Цена продажи',
       minWidth: 160,
       filter: 'agNumberColumnFilter',
       valueFormatter: (p) => p.value?.toFixed(2),
@@ -501,16 +509,27 @@ async function onExportDataAsExcel() {
   if (!gridApi.value) return
   displayedRows.value = []
   try {
-    // Get only what user sees
-
     gridApi.value.forEachNodeAfterFilterAndSort((node) => {
       if (node.data) displayedRows.value!.push(node.data)
     })
 
-    // Convert proxies/class instances to plain objects
-    const plainRows = JSON.parse(JSON.stringify(displayedRows.value))
+    const pinned = gridApi.value.getPinnedBottomRow(0)?.data
+    if (pinned) {
+      displayedRows.value.push(pinned)
+    }
 
-    const response = await axios.post('/api/FileReader/ExportProcessedResultsFiltered', plainRows, {
+    let queryUrl = ''
+    if (activeTab.value?.activeTab === 'ozon1') {
+      queryUrl = '/api/FileReader/ExportProcessedResultsV1'
+    } else if (activeTab.value?.activeTab === 'ozon2') {
+      queryUrl = '/api/FileReader/ExportProcessedResultsV2'
+    } else {
+      alert('Неизвестный тип экспорта')
+      return
+    }
+
+    const plainRows = JSON.parse(JSON.stringify(displayedRows.value))
+    const response = await axios.post(queryUrl, plainRows, {
       responseType: 'blob',
       headers: { 'Content-Type': 'application/json' },
     })
@@ -519,10 +538,14 @@ async function onExportDataAsExcel() {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     })
 
+    const fileName =
+      activeTab.value?.activeTab === 'ozon2'
+        ? 'processed_results_v2.xlsx'
+        : 'processed_results_v1.xlsx'
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'processed_results.xlsx'
+    link.download = fileName
     link.click()
     URL.revokeObjectURL(url)
   } catch (err) {

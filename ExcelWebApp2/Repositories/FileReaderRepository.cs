@@ -196,23 +196,40 @@ namespace ExcelWebApp2.Repositories
                 if (descriptionAttr == null) 
                     continue;
 
-                string description = descriptionAttr.Description;
-                int? index = row.GetFieldIndex(description);
-
+                var index = GetExactHeaderIndex(row, descriptionAttr.Description);
                 headerIndexes[prop.Name] = index;
             }
 
             return headerIndexes;
         }
 
-        public static string GetPropertyDescription<T>(string propertyName)
+        private static int? GetExactHeaderIndex(IXLRangeRow headerRow, string header)
         {
-            var prop = typeof(T).GetProperty(propertyName);
-            if (prop == null) 
-                return string.Empty;
+            var wanted = Norm(header);
 
-            var descriptionAttr = prop.GetCustomAttribute<DescriptionAttribute>();
-            return descriptionAttr?.Description ?? string.Empty;
+            foreach (var cell in headerRow.CellsUsed())
+            {
+                var text = Norm(cell.GetValue<string>());
+                if (string.Equals(text, wanted, StringComparison.Ordinal)) 
+                    return cell.Address.ColumnNumber;
+            }
+
+            // fallback
+            foreach (var cell in headerRow.CellsUsed())
+            {
+                var text = Norm(cell.GetValue<string>());
+                if (text.StartsWith(wanted, StringComparison.Ordinal))
+                    return cell.Address.ColumnNumber;
+            }
+
+            return null;
+        }
+        private static string Norm(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+            return s
+                .Replace('\u00A0', ' ')   // NBSP -> обычный пробел
+                .Trim();
         }
     }
 }

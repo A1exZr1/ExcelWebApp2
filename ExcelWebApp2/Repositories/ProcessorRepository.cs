@@ -223,7 +223,7 @@ namespace ExcelWebApp2.Repositories
 
                     var additionalFeesTotal = additionalFees.Values.Sum();
 
-                    var netProfit = Math.Round(skuSellerCostValue - (workCost ?? 0 + materialCost ?? 0) + (proportionalUnlinkedExpense ?? 0) + ozonFee + handlingFee + lastMileFee + logisticsFee + additionalFeesTotal, 3);
+                    var netProfit = Math.Round(skuSellerCostValue - (workCost ?? 0) - (materialCost ?? 0) + (proportionalUnlinkedExpense ?? 0) + ozonFee + handlingFee + lastMileFee + logisticsFee + additionalFeesTotal, 3);
 
                     return new ProcessedOzonResultV2Model
                     {

@@ -103,8 +103,22 @@ namespace ExcelWebApp2.Controllers
             return Ok(new { message = "Все загруженные данные были удалены." });
         }
 
-        [HttpPost("ExportProcessedResultsFiltered")]
-        public IActionResult ExportProcessedResultsFiltered([FromBody] List<ProcessedOzonResultV1Model> rows)
+        [HttpPost("ExportProcessedResultsV1")]
+        public IActionResult ExportProcessedResultsV1([FromBody] List<ProcessedOzonResultV1Model> rows)
+        {
+            if (rows == null || rows.Count == 0)
+                return BadRequest("Нет обработанных данных");
+
+            var stream = excelExportService.Export(rows);
+            return File(
+                stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "processed_results.xlsx"
+            );
+        }
+
+        [HttpPost("ExportProcessedResultsV2")]
+        public IActionResult ExportProcessedResultsV2([FromBody] List<ProcessedOzonResultV2Model> rows)
         {
             if (rows == null || rows.Count == 0)
                 return BadRequest("Нет обработанных данных");
