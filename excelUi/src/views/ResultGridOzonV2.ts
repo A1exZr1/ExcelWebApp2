@@ -13,8 +13,10 @@ export default class ResultGridOzonV1 {
     public ozonFee: number,
     public handlingFee: number,
     public lastMileFee: number,
-    public logisticFee: number,
+    public logisticsFee: number,
     public netProfit: number,
     public profitPercent: number,
+
+    public additionalFees: Record<string, number> = {},
   ) {}
 }

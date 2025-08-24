@@ -59,7 +59,7 @@
       </div>
     </div>
     <div class="pr-2 d-flex-column" style="width: 100%; height: 90%">
-      <div style="width: 100%; height: 95%">
+      <div style="width: 100%; height: 100%">
         <ag-grid-vue
           class="ag-theme-alpine"
           style="width: 100%; height: 100%"
@@ -68,9 +68,6 @@
           @gridReady="onGridReady"
           @filterChanged="onFilterChanged"
         />
-      </div>
-      <div class="pt-2 pr-2 pl-2 d-flex justify" style="font-size: 0.85rem">
-        Показано: {{ filteredRowCount }} из {{ totalRowCount }}
       </div>
     </div>
     <file-selector-dialog
@@ -99,7 +96,7 @@ const displayedRows = ref<ResultGridOzonV1[]>([])
 const totalRowCount = ref(0)
 const filteredRowCount = ref(0)
 const mainColumnDefs = ref<ColDef<any, any>[]>([])
-
+const feeKeysRef = ref<string[]>([])
 const isLoading = ref(false)
 const isFileSelectorVisible = ref(false)
 const activeTab = ref()
@@ -125,20 +122,22 @@ watch(rowMainData, () => {
 
 function onFilterChanged() {
   updateRowCounts()
+  updatePinnedTotals()
 }
 
 const gridOptions: GridOptions = {
+  columnDefs: mainColumnDefs.value,
   rowClassRules: {
-    'red-row': (params: RowClassParams) => params.data?.primeCost == null,
+    'red-row': (params: RowClassParams) => params.data?.materialCost == null,
   },
   defaultColDef: {
     sortable: true,
     filter: 'agTextColumnFilter',
     resizable: true,
-    flex: 1,
     wrapHeaderText: true,
     autoHeaderHeight: true,
   },
+  getRowStyle: (p) => (p.node.rowPinned ? { fontWeight: '600', background: '#f8f9fb' } : undefined),
   popupParent: document.body,
   rowModelType: 'clientSide',
   overlayNoRowsTemplate: '<span>Нет данных</span>',
@@ -174,28 +173,8 @@ async function onGridReady(event: GridReadyEvent) {
   gridApi.value = event.api
   gridApi.value.setGridOption('rowData', [])
   updateRowCounts()
+  updatePinnedTotals()
 }
-
-/* async function loadAndProcessAll() {
-  try {
-    isLoading.value = true
-    await Promise.all([
-      accrualUploader.value.upload(),
-      adsUploader.value.upload(),
-      primeUploader.value.upload(),
-    ])
-
-    if (isAnyBadFileSelected.value) {
-      isLoading.value = false
-      return
-    }
-
-    await loadData()
-  } catch (err) {
-    console.error('Ошибка при загрузке файлов', err)
-  }
-  isLoading.value = false
-} */
 
 function onSelectFiles() {
   isFileSelectorVisible.value = true
@@ -203,13 +182,14 @@ function onSelectFiles() {
 
 function onConfirmedLoadAndProcessAll() {
   isFileSelectorVisible.value = false
-  if (activeTab.value === 'ozon1') {
-    gridApi.value?.setGridOption('columnDefs', mainColumnDefsOzonV1)
-    loadProcessedOzonV1Data()
-  } else {
-    mainColumnDefs.value = mainColumnDefsOzonV2
+  if (activeTab.value.activeTab === 'ozon1') {
+    mainColumnDefs.value = mainColumnDefsOzonV1
     gridApi.value?.setGridOption('columnDefs', mainColumnDefs.value)
+    loadProcessedOzonV1Data()
+  } else if (activeTab.value.activeTab === 'ozon2') {
     loadProcessedOzonV2Data()
+  } else {
+    alert('Неизвестный тип загрузки')
   }
 }
 
@@ -222,7 +202,6 @@ async function loadProcessedOzonV1Data() {
 
   try {
     const response = await axios.get('/api/FileReader/GetOzonV1Results')
-
     rowMainData.value = response.data.map(
       (item: any) =>
         new ResultGridOzonV1(
@@ -241,6 +220,7 @@ async function loadProcessedOzonV1Data() {
     )
     gridApi.value.setGridOption('rowData', rowMainData.value)
     updateRowCounts()
+    updatePinnedTotals()
   } catch (err) {
     console.error(err)
     alert('Ошибка при получении результатов')
@@ -251,7 +231,14 @@ async function loadProcessedOzonV2Data() {
   if (!gridApi.value) return
 
   try {
-    const response = await axios.get('/api/FileReader/GetOzonV1Results')
+    const response = await axios.get('/api/FileReader/GetOzonV2Results')
+
+    feeKeysRef.value = Array.from(
+      new Set((response.data as any[]).flatMap((x) => Object.keys(x.additionalFees ?? {}))),
+    )
+
+    mainColumnDefs.value = buildOzonV2Columns(feeKeysRef.value)
+    gridApi.value.setGridOption('columnDefs', mainColumnDefs.value)
 
     rowMainData.value = response.data.map(
       (item: any) =>
@@ -268,22 +255,78 @@ async function loadProcessedOzonV2Data() {
           item.ozonFee,
           item.handlingFee,
           item.lastMileFee,
-          item.logisticFee,
+          item.logisticsFee,
           item.netProfit,
           item.profitPercent,
+          item.additionalFees ?? {},
         ),
     )
     gridApi.value.setGridOption('rowData', rowMainData.value)
     updateRowCounts()
+    updatePinnedTotals()
   } catch (err) {
     console.error(err)
     alert('Ошибка при получении результатов')
   }
 }
 
+function updatePinnedTotals(visibleOnly = true) {
+  if (!gridApi.value) return
+
+  const rows: any[] = []
+  if (visibleOnly) {
+    gridApi.value.forEachNodeAfterFilterAndSort((n) => n.data && rows.push(n.data))
+  } else {
+    rows.push(...rowMainData.value)
+  }
+
+  const totals: any = { articleName: `Итого: ${filteredRowCount.value} из ${totalRowCount.value}` }
+
+  const sum = (sel: (r: any) => number | undefined | null) =>
+    Number(rows.reduce((acc, r) => acc + (Number(sel(r)) || 0), 0).toFixed(2))
+
+  const pct = (num: number, den: number) =>
+    den !== 0 ? Number(((num / Math.abs(den)) * 100).toFixed(2)) : null
+
+  if (activeTab.value?.activeTab === 'ozon1') {
+    totals.totalSumm = sum((r) => r.totalSumm)
+    totals.quantity = sum((r) => r.quantity)
+    totals.revenue = sum((r) => r.revenue)
+    totals.advertisingCost = sum((r) => r.advertisingCost)
+    totals.unlinkedExpenses = sum((r) => r.unlinkedExpenses)
+    totals.workCost = sum((r) => r.workCost)
+    totals.materialCost = sum((r) => r.materialCost)
+    totals.netProfit = sum((r) => r.netProfit)
+    totals.profitPercent = pct(totals.netProfit, totals.revenue)
+  }
+
+  if (activeTab.value?.activeTab === 'ozon2') {
+    totals.preCommissionAmount = sum((r) => r.preCommissionAmount)
+    totals.quantity = sum((r) => r.quantity)
+    totals.workCost = sum((r) => r.workCost)
+    totals.materialCost = sum((r) => r.materialCost)
+    totals.unlinkedExpenses = sum((r) => r.unlinkedExpenses)
+    totals.ozonFee = sum((r) => r.ozonFee)
+    totals.handlingFee = sum((r) => r.handlingFee)
+    totals.lastMileFee = sum((r) => r.lastMileFee)
+    totals.logisticsFee = sum((r) => r.logisticsFee)
+    totals.netProfit = sum((r) => r.netProfit)
+    totals.profitPercent = pct(totals.netProfit, totals.preCommissionAmount)
+
+    const fees: Record<string, number> = {}
+    for (const k of feeKeysRef.value) {
+      fees[k] = Number(
+        rows.reduce((acc, r) => acc + (Number(r.additionalFees?.[k]) || 0), 0).toFixed(2),
+      )
+    }
+    totals.additionalFees = fees
+  }
+  gridApi.value?.setGridOption('pinnedBottomRowData', [totals])
+}
+
 const mainColumnDefsOzonV1 = [
   { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
-  { field: 'sku', headerName: 'SKU', minWidth: 150 },
+  { field: 'sku', headerName: 'SKU', minWidth: 140, maxWidth: 150 },
   {
     field: 'totalSumm',
     headerName: 'Поступило на счёт',
@@ -349,38 +392,110 @@ const mainColumnDefsOzonV1 = [
   },
 ] as const satisfies ColDef[]
 
-const mainColumnDefsOzonV2 = [
-  { field: 'articleName', headerName: 'Имя артикула', minWidth: 300, sort: 'asc', sortIndex: 0 },
-  { field: 'sku', headerName: 'SKU', minWidth: 150 },
-  {
-    field: 'totalSumm',
-    headerName: 'Поступило на счёт',
-    minWidth: 150,
+function buildOzonV2Columns(feeKeys: string[]): ColDef[] {
+  const baseBefore: ColDef[] = [
+    {
+      field: 'articleName',
+      headerName: 'Имя артикула',
+      minWidth: 300,
+      sort: 'asc' as const,
+      sortIndex: 0,
+    },
+    { field: 'sku', headerName: 'SKU', minWidth: 140, maxWidth: 150 },
+    { field: 'warehouse', headerName: 'Склад', minWidth: 130, maxWidth: 150 },
+    {
+      field: 'preCommissionAmount',
+      headerName: 'Сумма до вычета комиссии',
+      minWidth: 160,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'quantity',
+      headerName: 'Кол-во продаж',
+      minWidth: 110,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'workCost',
+      headerName: 'Стоимость работы',
+      minWidth: 140,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'materialCost',
+      headerName: 'Стоимость материалов',
+      minWidth: 160,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'unlinkedExpenses',
+      headerName: 'Нераспределённые расходы',
+      minWidth: 170,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'ozonFee',
+      headerName: 'Комиссия Озон',
+      minWidth: 130,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'handlingFee',
+      headerName: 'Комиссия за обработку',
+      minWidth: 160,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'lastMileFee',
+      headerName: 'Последняя миля',
+      minWidth: 130,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'logisticsFee',
+      headerName: 'Логистика',
+      minWidth: 120,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+  ]
+
+  const dynamicFeeCols: ColDef[] = feeKeys.map((key) => ({
+    headerName: key,
+    colId: `fee:${key}`,
+    valueGetter: (params) => params.data?.additionalFees?.[key] ?? 0,
     filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'quantity',
-    headerName: 'Количество продаж',
-    minWidth: 80,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'unlinkedExpenses',
-    headerName: 'Нераспределённые расходы',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-  {
-    field: 'primeCost',
-    headerName: 'Себестоимость',
-    minWidth: 100,
-    filter: 'agNumberColumnFilter',
-    valueFormatter: (params: any) => params.value?.toFixed(2),
-  },
-] as const satisfies ColDef[]
+    minWidth: 140,
+    valueFormatter: (p) => (p.value != null ? Number(p.value).toFixed(2) : ''),
+  }))
+
+  const tail: ColDef[] = [
+    {
+      field: 'netProfit',
+      headerName: 'Чистая прибыль',
+      minWidth: 140,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => p.value?.toFixed(2),
+    },
+    {
+      field: 'profitPercent',
+      headerName: '% от выручки',
+      minWidth: 120,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (p) => (p.value != null ? `${p.value.toFixed(2)}%` : 'н/д'),
+    },
+  ]
+
+  return [...baseBefore, ...dynamicFeeCols, ...tail]
+}
 
 async function onExportDataAsExcel() {
   if (!gridApi.value) return
@@ -418,6 +533,8 @@ async function onExportDataAsExcel() {
 
 async function resetData() {
   gridApi.value?.setGridOption('rowData', [])
+  mainColumnDefs.value = []
+  gridApi.value?.setGridOption('columnDefs', [])
   rowMainData.value = []
   displayedRows.value = []
   totalRowCount.value = 0

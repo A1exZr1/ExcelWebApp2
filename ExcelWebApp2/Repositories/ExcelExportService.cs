@@ -17,9 +17,10 @@ namespace ExcelWebApp2.Repositories
             worksheet.Cell(1, 5).Value = "Выручка";
             worksheet.Cell(1, 6).Value = "Расходы на рекламу";
             worksheet.Cell(1, 7).Value = "Нераспределённые расходы";
-            worksheet.Cell(1, 8).Value = "Себестоимость";
-            worksheet.Cell(1, 9).Value = "Чистая прибыль";
-            worksheet.Cell(1, 10).Value = "% от выручки";
+            worksheet.Cell(1, 8).Value = "Расходы на работу";
+            worksheet.Cell(1, 9).Value = "Расходы на материалы";
+            worksheet.Cell(1, 10).Value = "Чистая прибыль";
+            worksheet.Cell(1, 11).Value = "% от выручки";
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -28,7 +29,7 @@ namespace ExcelWebApp2.Repositories
 
                 var range = worksheet.Range(row, 1, row, 10);
 
-                if (item.PrimeCost == null)
+                if (item.WorkCost == null)
                 {
                     range.Style.Fill.BackgroundColor = XLColor.LightPink;
                 }
@@ -40,9 +41,10 @@ namespace ExcelWebApp2.Repositories
                 worksheet.Cell(row, 5).Value = item.Revenue;
                 worksheet.Cell(row, 6).Value = item.AdvertisingCost;
                 worksheet.Cell(row, 7).Value = item.UnlinkedExpenses;
-                worksheet.Cell(row, 8).Value = item.PrimeCost;
-                worksheet.Cell(row, 9).Value = item.NetProfit;
-                worksheet.Cell(row, 10).Value = item.ProfitPercent;
+                worksheet.Cell(row, 8).Value = item.WorkCost;
+                worksheet.Cell(row, 9).Value = item.MaterialCost;
+                worksheet.Cell(row, 10).Value = item.NetProfit;
+                worksheet.Cell(row, 11).Value = item.ProfitPercent;
             }
 
             var stream = new MemoryStream();

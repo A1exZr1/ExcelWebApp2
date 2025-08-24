@@ -10,7 +10,8 @@
 
         public decimal Revenue { get; set; }
         public decimal AdvertisingCost { get; set; }
-        public decimal? PrimeCost { get; set; }
+        public decimal? WorkCost { get; set; }
+        public decimal? MaterialCost { get; set; }
         public decimal UnlinkedExpenses { get; set; }
         public decimal NetProfit { get; set; }
         public decimal? ProfitPercent { get; set; }

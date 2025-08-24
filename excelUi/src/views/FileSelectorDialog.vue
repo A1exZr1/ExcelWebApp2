@@ -159,7 +159,7 @@ function onCancelClick() {
 }
 
 defineExpose({
-  activeTab,
+  activeTab: activeTab,
 })
 </script>
 

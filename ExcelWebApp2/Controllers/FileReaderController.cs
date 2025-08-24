@@ -71,9 +71,9 @@ namespace ExcelWebApp2.Controllers
         [HttpGet("GetOzonV1Results")]
         public IActionResult GetOzonV1Results()
         {
-            if (!processorRepository.HasAllInputs())
+            if (!processorRepository.HasAllInputs(ProcessingType.OzonV1))
             {
-                var missing = processorRepository.GetMissingInputs();
+                var missing = processorRepository.GetMissingInputs(ProcessingType.OzonV1);
                 if (!string.IsNullOrEmpty(missing)) 
                     return BadRequest("Не все входные файлы были загружены.\n" + missing);
             }
@@ -85,9 +85,9 @@ namespace ExcelWebApp2.Controllers
         [HttpGet("GetOzonV2Results")]
         public IActionResult GetOzonV2Results()
         {
-            if (!processorRepository.HasAllInputs())
+            if (!processorRepository.HasAllInputs(ProcessingType.OzonV2))
             {
-                var missing = processorRepository.GetMissingInputs();
+                var missing = processorRepository.GetMissingInputs(ProcessingType.OzonV2);
                 if (!string.IsNullOrEmpty(missing))
                     return BadRequest("Не все входные файлы были загружены.\n" + missing);
             }

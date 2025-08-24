@@ -19,10 +19,16 @@ namespace ExcelWebApp2.Repositories
         public void SetAds(List<AdvertisingModel> ads) => _ads = ads;
         public void SetPrimeCosts(List<PrimeCostModel> costs) => _primeCosts = costs;
 
-        public bool HasAllInputs()
+        public bool HasAllInputs(ProcessingType processingType)
         {
-            return _accrualsV1.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0;
+            return processingType switch
+            {
+                ProcessingType.OzonV1 => _accrualsV1.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0,
+                ProcessingType.OzonV2 => _accrualsV2.Count != 0 && _primeCosts.Count != 0,
+                _ => throw new NotImplementedException(),
+            };
         }
+
         public List<ProcessedOzonResultV1Model> GetLastProcessedResults()
         {
             return _processedResultsV1;
@@ -43,12 +49,22 @@ namespace ExcelWebApp2.Repositories
             _processedResultsV2.Clear();
         }
 
-        public string GetMissingInputs()
+        public string GetMissingInputs(ProcessingType processingType)
         {
             var result = string.Empty;
-            if (_accrualsV1.Count == 0) result = "Файл начислений отсутствует\n";
-            if (_ads.Count == 0) result += "Файл рекламы отсутствует\n";
             if (_primeCosts.Count == 0) result += "Файл себестоимости отсутствует\n";
+
+            if (processingType == ProcessingType.OzonV2)
+            {
+                if (_accrualsV2.Count == 0) result += "Файл отчёта по товарам отсутствует\n";
+                return result;
+            }
+            else if (processingType == ProcessingType.OzonV1)
+            {
+                if (_accrualsV1.Count == 0) result += "Файл отчёта по товарам отсутствует\n";
+                if (_ads.Count == 0) result += "Файл рекламы отсутствует\n";
+                return result;
+            }
             return result;
         }
 
@@ -102,12 +118,9 @@ namespace ExcelWebApp2.Repositories
                         .Where(x => x.Sku == sku)
                         .Sum(x => GetParsedDecimal(x.Cost));
 
-                    decimal? primeCost = _primeCosts
-                        .Where(x => x.ArticleName == articleName)
-                        .Select(x => (decimal?)GetParsedDecimal(x.Total) * quantity)
-                        .FirstOrDefault();
+                    var (workCost, materialCost) = GetPrimeCosts(articleName, quantity);
 
-                    var netProfit = Math.Round(summary - adCost - (primeCost?? 0) + proportionalUnlinkedExpense?? 0, 3);
+                    var netProfit = Math.Round(summary - adCost - (workCost ?? 0 + materialCost ?? 0) + proportionalUnlinkedExpense?? 0, 3);
 
                     return new ProcessedOzonResultV1Model
                     {
@@ -117,7 +130,8 @@ namespace ExcelWebApp2.Repositories
                         Quantity = quantity,
                         Revenue = revenue,
                         AdvertisingCost = adCost,
-                        PrimeCost = primeCost,
+                        WorkCost = workCost,
+                        MaterialCost = materialCost,
                         NetProfit = netProfit,
                         UnlinkedExpenses = proportionalUnlinkedExpense ?? 0,
                         ProfitPercent = summary != 0 ? Math.Round((netProfit / Math.Abs(summary)) * 100, 2) : null
@@ -133,7 +147,7 @@ namespace ExcelWebApp2.Repositories
         {
             var unlinkedExpense = _accrualsV2
                 .Where(x => string.IsNullOrWhiteSpace(x.ArticleName))
-                .Sum(x => GetParsedDecimal(x.PreCommissionAmount));
+                .Sum(x => GetParsedDecimal(x.TotalAmount));
 
             var filterTypes = _accrualsV2
                 .Select(x => x.AccrualType)
@@ -175,7 +189,7 @@ namespace ExcelWebApp2.Repositories
                         .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
                         .Count();
                     
-                    var (WorkCost, MaterialCost) = GetPrimeCosts(articleName, quantity);
+                    var (workCost, materialCost) = GetPrimeCosts(articleName, quantity);
 
                     var ozonFee = group
                         .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
@@ -209,7 +223,7 @@ namespace ExcelWebApp2.Repositories
 
                     var additionalFeesTotal = additionalFees.Values.Sum();
 
-                    var netProfit = Math.Round(skuSellerCostValue - (WorkCost ?? 0 + MaterialCost ?? 0) + (proportionalUnlinkedExpense ?? 0) + ozonFee + handlingFee + lastMileFee + logisticsFee + additionalFeesTotal, 3);
+                    var netProfit = Math.Round(skuSellerCostValue - (workCost ?? 0 + materialCost ?? 0) + (proportionalUnlinkedExpense ?? 0) + ozonFee + handlingFee + lastMileFee + logisticsFee + additionalFeesTotal, 3);
 
                     return new ProcessedOzonResultV2Model
                     {
@@ -218,8 +232,8 @@ namespace ExcelWebApp2.Repositories
                         Warehouse = group.FirstOrDefault(x => x.AccrualType == "Доставка покупателю")?.Warehouse ?? "Не определён",
                         PreCommissionAmount = skuSellerCostValue,
                         Quantity = quantity,
-                        WorkCost = WorkCost,
-                        MaterialCost = MaterialCost,
+                        WorkCost = workCost,
+                        MaterialCost = materialCost,
                         NetProfit = netProfit,
                         OzonFee = ozonFee,
                         HandlingFee = handlingFee,
@@ -236,7 +250,7 @@ namespace ExcelWebApp2.Repositories
             return _processedResultsV2;
         }
 
-        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeCosts(string articleName, int quantity)
+        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeCosts(string articleName, decimal quantity)
         {
             var primeCost = _primeCosts
                 .Where(x => x.ArticleName == articleName)
