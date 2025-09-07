@@ -68,6 +68,46 @@ namespace ExcelWebApp2.Controllers
             return Ok(new { count = result.Data.Count, message = result.Message });
         }
 
+        [HttpPost("ReadAccrualsWb")]
+        public async Task<IActionResult> ReadAccrualsWb(IFormFile[] file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Файл не загружен.");
+
+            var result = new List<AccrualRecordWbModel>();
+            var messages = new List<string>();
+
+            foreach (var f in file)
+            {
+                var temp = await fileReaderRepository.ReadExcelFile<AccrualRecordWbModel>(f);
+
+                if (!temp.Success)
+                    return BadRequest(temp.Message);
+
+                result.AddRange(temp.Data);
+                if (!string.IsNullOrEmpty(temp.Message))
+                    messages.Add(temp.Message);
+            }
+
+            processorRepository.SetAccrualsWb(result);
+            return Ok(new { count = result.Count, message = string.Join("; ", messages) });
+        }
+
+        [HttpPost("PrimeCostModelWb")]
+        public async Task<IActionResult> PrimeCostModelWb(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Файл не загружен.");
+
+            var result = await fileReaderRepository.ReadExcelFile<PrimeCostWbModel>(file);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            processorRepository.SetPrimeCostsWb(result.Data);
+            return Ok(new { count = result.Data.Count, message = result.Message });
+        }
+
         [HttpGet("GetOzonV1Results")]
         public IActionResult GetOzonV1Results()
         {

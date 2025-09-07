@@ -5,6 +5,7 @@
         <v-tabs v-model="activeTab" align-tabs="center" color="primary">
           <v-tab value="ozon1" text="Ozon V1" style="min-width: 120px; height: 50px" />
           <v-tab value="ozon2" text="Ozon V2" style="min-width: 120px; height: 50px" />
+          <v-tab value="wb" text="Wildberries" style="min-width: 120px; height: 50px" />
         </v-tabs>
 
         <v-tabs-window
@@ -54,6 +55,26 @@
               />
             </div>
           </v-tabs-window-item>
+          <v-tabs-window-item style="height: 100%" value="wb">
+            <div
+              class="d-flex flex-column pa-2"
+              style="width: 100%; height: 100%; overflow-y: auto"
+            >
+              <FileUploader
+                class="pb-2"
+                label="файлы отчётов"
+                chips
+                multiple
+                endpoint="/api/FileReader/ReadAccrualsWb"
+                ref="accrualsUploaderWb"
+              />
+              <FileUploader
+                label="файл себестоимости"
+                endpoint="/api/FileReader/PrimeCostModelWb"
+                ref="primeUploaderWb"
+              />
+            </div>
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-container>
       <v-card-actions>
@@ -85,6 +106,8 @@ const accrualUploader2 = ref()
 const adsUploader = ref()
 const primeUploader1 = ref()
 const primeUploader2 = ref()
+const accrualsUploaderWb = ref()
+const primeUploaderWb = ref()
 const isLoading = ref(false)
 
 const props = defineProps({
@@ -96,8 +119,10 @@ const isAnyBadFileSelected = computed(
     accrualUploader1.value?.isBadFileSelected ||
     accrualUploader2.value?.isBadFileSelected ||
     adsUploader.value?.isBadFileSelected ||
-    primeUploader1.value?.isBadFileSelected,
-  primeUploader2.value?.isBadFileSelected,
+    primeUploader1.value?.isBadFileSelected ||
+    primeUploader2.value?.isBadFileSelected ||
+    accrualsUploaderWb.value?.isBadFileSelected ||
+    primeUploaderWb.value?.isBadFileSelected,
 )
 
 const canUpload = computed(() => {
@@ -108,10 +133,16 @@ const canUpload = computed(() => {
       primeUploader1.value?.hasFile &&
       !isAnyBadFileSelected.value
     )
-  } else {
+  } else if (activeTab.value === 'ozon2') {
     return (
       accrualUploader2.value?.hasFile &&
       primeUploader2.value?.hasFile &&
+      !isAnyBadFileSelected.value
+    )
+  } else {
+    return (
+      accrualsUploaderWb.value?.hasFile &&
+      primeUploaderWb.value?.hasFile &&
       !isAnyBadFileSelected.value
     )
   }
@@ -146,6 +177,17 @@ async function onConfirmClick() {
     try {
       isLoading.value = true
       await Promise.all([accrualUploader2.value?.upload(), primeUploader2.value?.upload()])
+      if (isAnyBadFileSelected.value) return
+      emit('confirmed')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  if (activeTab.value == 'wb') {
+    try {
+      isLoading.value = true
+      await Promise.all([accrualsUploaderWb.value?.upload(), primeUploaderWb.value?.upload()])
       if (isAnyBadFileSelected.value) return
       emit('confirmed')
     } finally {

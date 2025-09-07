@@ -4,5 +4,6 @@
     {
         OzonV1,
         OzonV2,
+        Wildberries
     }
 }

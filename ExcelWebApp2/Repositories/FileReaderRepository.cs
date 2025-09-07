@@ -34,6 +34,14 @@ namespace ExcelWebApp2.Repositories
                 {
                     rawResult = await Task.Run(() => ReadAccrualsV2(stream));
                 }
+                else if (typeof(T) == typeof(AccrualRecordWbModel))
+                {
+                    rawResult = await Task.Run(() => ReadAccrualsWb(stream));
+                }
+                else if (typeof(T) == typeof(PrimeCostWbModel))
+                {
+                    rawResult = await Task.Run(() => ReadPrimeCostWb(stream));
+                }
                 else
                 {
                     throw new NotSupportedException($"Не поддерживаемый тип {typeof(T).Name}");
@@ -181,6 +189,66 @@ namespace ExcelWebApp2.Repositories
                     MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.MaterialCost)]),
                     WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.WorkCost)]),
                     Total = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.Total)])
+                })
+                .ToList();
+            return result;
+        }
+
+        private static List<AccrualRecordWbModel> ReadAccrualsWb(Stream stream)
+        {
+
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
+
+            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст");
+            var headerRow = rows.First();
+
+            var headerCheckingRow = "№;Номер поставки;Предмет;Код номенклатуры;Бренд;Артикул поставщика;Название;Размер;Баркод;Тип документа;Обоснование для оплаты;Дата заказа покупателем;Дата продажи;Кол-во;Цена розничная;Вайлдберриз реализовал Товар (Пр);Согласованный продуктовый дисконт, %;Промокод, %;Итоговая согласованная скидка, %;Цена розничная с учетом согласованной скидки;Размер снижения кВВ из-за рейтинга, %;Размер изменения кВВ из-за акции, %;Скидка постоянного Покупателя (СПП), %;Размер кВВ, %;Размер  кВВ без НДС, % Базовый;Итоговый кВВ без НДС, %;Вознаграждение с продаж до вычета услуг поверенного, без НДС;Возмещение за выдачу и возврат товаров на ПВЗ;Эквайринг/Комиссии за организацию платежей;Размер комиссии за эквайринг/Комиссии за организацию платежей, %;Тип платежа за Эквайринг/Комиссии за организацию платежей;Вознаграждение Вайлдберриз (ВВ), без НДС;НДС с Вознаграждения Вайлдберриз;К перечислению Продавцу за реализованный Товар;Количество доставок;Количество возврата;Услуги по доставке товара покупателю;Дата начала действия фиксации;Дата конца действия фиксации;Признак услуги платной доставки;Общая сумма штрафов;Корректировка Вознаграждения Вайлдберриз (ВВ);Виды логистики, штрафов и корректировок ВВ;Стикер МП;Наименование банка-эквайера;Номер офиса;Наименование офиса доставки;ИНН партнера;Партнер;Склад;Страна;Тип коробов;Номер таможенной декларации;Номер сборочного задания;Код маркировки;ШК;Srid;Возмещение издержек по перевозке/по складским операциям с товаром;Организатор перевозки;Хранение;Удержания;Платная приемка;Фиксированный коэффициент склада по поставке;Признак продажи юридическому лицу;Номер короба для платной приемки;Скидка по программе софинансирования;Скидка Wibes, %;Сумма удержанная за начисленные баллы программы лояльности;Компенсация скидки по программе лояльности";
+
+            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
+                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
+
+            var headerIndexes = GetHeaderIndexes<AccrualRecordWbModel>(headerRow);
+
+            var result = rows
+                .Skip(1)
+                .Select(row => new AccrualRecordWbModel
+                {
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.ArticleName)]),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Sku)]),
+                    AmountPayableToSeller = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.AmountPayableToSeller)]),
+                    DocumentType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.DocumentType)]),
+                    Logistics = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Logistics)]),
+                    PaymentReason = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaymentReason)]),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Quantity)]),
+                    RetailPrice = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.RetailPrice)]),
+                    SupplierArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.SupplierArticleName)]),
+                    TypesOfLogisticsPenaltiesAndAdjustments = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TypesOfLogisticsPenaltiesAndAdjustments)]),
+                    PaidAcceptance = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaidAcceptance)]),
+                    TotalAmountOfFines = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TotalAmountOfFines)]),
+                })
+                .ToList();
+            return result;
+        }
+
+        private static List<PrimeCostWbModel> ReadPrimeCostWb(Stream stream)
+        {
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
+
+            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст.");
+            var headerRow = rows.First();
+
+            var headerIndexes = GetHeaderIndexes<PrimeCostWbModel>(headerRow);
+
+            var result = rows
+                .Skip(1)
+                .Select(row => new PrimeCostWbModel
+                {
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.Sku)]),
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.ArticleName)]),
+                    MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.MaterialCost)]),
+                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.WorkCost)]),
                 })
                 .ToList();
             return result;

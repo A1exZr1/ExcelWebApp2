@@ -7,6 +7,7 @@
         accept=".xlsx, .xls"
         prepend-icon="mdi-file-excel"
         density="compact"
+        v-bind="$attrs"
         :error-messages="alertType === 'error' ? shortMessage : ''"
         :hint="alertType === 'success' ? shortMessage : ''"
         :persistent-hint="alertType === 'success'"
@@ -35,7 +36,7 @@ const props = defineProps({
   endpoint: String,
 })
 
-const selectedFile = ref<File | null>(null)
+const selectedFile = ref<File | File[] | null>(null)
 const isBadFileSelected = ref(false)
 const message = ref('')
 const alertType = ref<'info' | 'success' | 'warning' | 'error'>('info')
@@ -52,11 +53,22 @@ watch(selectedFile, () => {
   isBadFileSelected.value = false
 })
 
+function getFiles(): File[] {
+  if (!selectedFile.value) return []
+  return Array.isArray(selectedFile.value) ? selectedFile.value : [selectedFile.value]
+}
+
 async function upload() {
-  if (!selectedFile.value) return
+  const files = getFiles()
+  if (!files.length) return
 
   const formData = new FormData()
-  formData.append('file', selectedFile.value)
+  for (const f of files) {
+    formData.append('file', f, f.name)
+  }
+
+  console.log('selectedFile', selectedFile.value)
+
   try {
     const response = await axios.post(props.endpoint!, formData)
     const count = response.data.count
