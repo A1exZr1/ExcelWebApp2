@@ -1,5 +1,7 @@
 ﻿using ExcelWebApp2.Models;
+using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace ExcelWebApp2.Repositories
@@ -116,13 +118,13 @@ namespace ExcelWebApp2.Repositories
 
                     var quantity = group
                         .Where(x => x.AccrualType.Equals("выручка", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.Quantity));
+                        .Sum(x => GetParsedDecimal(x.Quantity, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Quantity))));
 
                     var adCost = _ads
                         .Where(x => x.Sku == sku)
                         .Sum(x => GetParsedDecimal(x.Cost));
 
-                    var (workCost, materialCost) = GetPrimeCosts(articleName, quantity);
+                    var (workCost, materialCost) = GetPrimeOzonCosts(articleName, quantity);
 
                     var netProfit = Math.Round(summary - adCost - (workCost ?? 0) - (materialCost ?? 0) + proportionalUnlinkedExpense?? 0, 3);
 
@@ -193,7 +195,7 @@ namespace ExcelWebApp2.Repositories
                         .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
                         .Count();
                     
-                    var (workCost, materialCost) = GetPrimeCosts(articleName, quantity);
+                    var (workCost, materialCost) = GetPrimeOzonCosts(articleName, quantity);
 
                     var ozonFee = group
                         .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
@@ -265,101 +267,155 @@ namespace ExcelWebApp2.Repositories
                     var supplierArticleName = group.Key.SupplierArticleName;
                     var sku = group.Key.Sku;
                     var articleName = group.FirstOrDefault()?.ArticleName ?? string.Empty;
-
-                    // цена розничная
-                    var retailPriceSumm = group
-                        .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.RetailPrice));
-
-                    var quantity = group
-                        .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.Quantity));
-
-                    //К перечислению Продавцу за реализованный Товар
-                    var amountPayableToSellerSumm = group
-                        .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.AmountPayableToSeller));
-
-                    var logisticSumm = group
-                        .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Логистика", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.Logistics));
-
-                    var cancellationSumm = group
-                        .Where(x => x.TypesOfLogisticsPenaltiesAndAdjustments.Equals("К клиенту при отмене", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.Logistics));
-
-                    var cancellationQuantity = group
-                        .Count(x => x.TypesOfLogisticsPenaltiesAndAdjustments.Equals("К клиенту при отмене", StringComparison.OrdinalIgnoreCase));
-
-                    //Платная приёмка
-                    var paidAcceptanceSumm = group
-                        .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Платная приемка", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.PaidAcceptance));
-
-                    //Штрафы
-                    var payableFinesSumm = group
-                        .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Штраф", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.TotalAmountOfFines));
-
-                    var returnSumm = group
-                        .Where(x => x.DocumentType.Equals("Возврат", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Возврат", StringComparison.OrdinalIgnoreCase))
-                        .Sum(x => GetParsedDecimal(x.AmountPayableToSeller));
-
-                    var returnQuantity = group
-                        .Count(x => x.DocumentType.Equals("Возврат", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Возврат", StringComparison.OrdinalIgnoreCase));
-
-                    var (workCost, materialCost) = GetPrimeWbCosts(supplierArticleName, sku, quantity);
-
-                    var netProfit = Math.Round(amountPayableToSellerSumm - (workCost ?? 0) - (materialCost ?? 0) - logisticSumm - (cancellationSumm * cancellationQuantity) - paidAcceptanceSumm -
-                        payableFinesSumm - (returnSumm * returnQuantity) + (returnQuantity * (materialCost ?? 0)), 3);
-
-                    return new ProcessedWbResultModel
+                    try
                     {
-                        SupplierArticleName = supplierArticleName,
-                        ArticleName = articleName,
-                        Sku = sku,
-                        RetailPriceSumm = retailPriceSumm,
-                        Quantity = quantity,
-                        AmountPayableToSellerSumm = amountPayableToSellerSumm,
-                        LogisticsFee = logisticSumm,
-                        CancelledSumm = cancellationSumm,
-                        CancelledQuantity = cancellationQuantity,
-                        PaidAcceptanceSumm = paidAcceptanceSumm,
-                        TotalAmountOfFines = payableFinesSumm,
-                        ReturnedSumm = returnSumm,
-                        ReturnedQuantity = returnQuantity,
-                        WorkCost = workCost,
-                        MaterialCost = materialCost,
-                        NetProfit = netProfit,
-                        ProfitPercent = amountPayableToSellerSumm != 0 ? Math.Round((netProfit / Math.Abs(amountPayableToSellerSumm)) * 100, 2) : null
-                    };
+                        // цена розничная
+                        var retailPriceSumm = group
+                            .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.RetailPrice, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.RetailPrice))));
+
+                        var quantity = group
+                            .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.Quantity, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Quantity))));
+
+                        //К перечислению Продавцу за реализованный Товар
+                        var amountPayableToSellerSumm = group
+                            .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.AmountPayableToSeller, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.AmountPayableToSeller))));
+
+                        var logisticSumm = group
+                            .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Логистика", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.Logistics, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Logistics))));
+
+                        var cancellationSumm = group
+                            .Where(x => x.TypesOfLogisticsPenaltiesAndAdjustments.Equals("К клиенту при отмене", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.Logistics, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Logistics))));
+
+                        var cancellationQuantity = group
+                            .Count(x => x.TypesOfLogisticsPenaltiesAndAdjustments.Equals("К клиенту при отмене", StringComparison.OrdinalIgnoreCase));
+
+                        //Платная приёмка
+                        var paidAcceptanceSumm = group
+                            .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Платная приемка", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.PaidAcceptance, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.PaidAcceptance))));
+
+                        //Штрафы
+                        var payableFinesSumm = group
+                            .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Штраф", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.TotalAmountOfFines, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.TotalAmountOfFines))));
+
+                        var returnSumm = group
+                            .Where(x => x.DocumentType.Equals("Возврат", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Возврат", StringComparison.OrdinalIgnoreCase))
+                            .Sum(x => GetParsedDecimal(x.AmountPayableToSeller, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.AmountPayableToSeller))));
+
+                        var returnQuantity = group
+                            .Count(x => x.DocumentType.Equals("Возврат", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Возврат", StringComparison.OrdinalIgnoreCase));
+
+                        var (workCost, materialCost) = GetPrimeWbCosts(supplierArticleName, sku);
+                        var allWorkCost = (workCost ?? 0) * quantity;
+                        var allMaterialCost = (materialCost ?? 0) * quantity;
+
+                        var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
+                            payableFinesSumm - (returnSumm * returnQuantity) + (returnQuantity * (materialCost ?? 0)), 3);
+
+                        return new ProcessedWbResultModel
+                        {
+                            SupplierArticleName = supplierArticleName,
+                            ArticleName = articleName,
+                            Sku = sku,
+                            RetailPriceSumm = retailPriceSumm,
+                            Quantity = quantity,
+                            AmountPayableToSellerSumm = amountPayableToSellerSumm,
+                            LogisticsFee = logisticSumm,
+                            CancelledSumm = cancellationSumm,
+                            CancelledQuantity = cancellationQuantity,
+                            PaidAcceptanceSumm = paidAcceptanceSumm,
+                            TotalAmountOfFines = payableFinesSumm,
+                            ReturnedSumm = returnSumm,
+                            ReturnedQuantity = returnQuantity,
+                            WorkCost = workCost is null ? null : allWorkCost,
+                            MaterialCost = materialCost is null ? null : allMaterialCost,
+                            NetProfit = netProfit,
+                            ProfitPercent = amountPayableToSellerSumm != 0 ? Math.Round((netProfit / Math.Abs(amountPayableToSellerSumm)) * 100, 2) : null
+                        };
+                    }
+                    catch (Exception e)
+                    {
+                        return new ProcessedWbResultModel
+                        {
+                            ArticleName = articleName,
+                            Sku = sku,
+                            SupplierArticleName = "Ошибка при чтении данных: " + e.Message,
+                            WorkCost = null,
+                            MaterialCost = null,
+                            ProfitPercent = null
+                        };
+                    }
                 })
                 .ToList();
+
+
+            var storageSum = _accrualsWb
+                .Where(x => string.IsNullOrEmpty(x.ArticleName) && string.IsNullOrEmpty(x.DocumentType) && x.PaymentReason.Equals("Хранение", StringComparison.OrdinalIgnoreCase))
+                .Sum(x => GetParsedDecimal(x.StorageFee));
+
+            var withholdingsSum = _accrualsWb
+                .Where(x => string.IsNullOrEmpty(x.ArticleName) && string.IsNullOrEmpty(x.DocumentType) && x.PaymentReason.Equals("Удержание", StringComparison.OrdinalIgnoreCase))
+                .Sum(x => GetParsedDecimal(x.Withholdings));
+
+            result.Add(new ProcessedWbResultModel
+            {
+                SupplierArticleName = "～ ХРАНЕНИЕ",
+                NetProfit = -storageSum,
+                WorkCost = 0,
+                MaterialCost = 0,
+                ProfitPercent = 0
+            });
+            result.Add(new ProcessedWbResultModel
+            {
+                SupplierArticleName = "～ УДЕРЖАНИЯ",
+                NetProfit = -withholdingsSum,
+                WorkCost = 0,
+                MaterialCost = 0,
+                ProfitPercent = 0
+            });
 
             _processedResultsWb = result;
             return _processedResultsWb;
         }
 
 
-        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeCosts(string articleName, decimal quantity)
+        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeOzonCosts(string articleName, decimal quantity)
         {
             var primeCost = _primeCosts
                 .Where(x => x.ArticleName == articleName)
                 .FirstOrDefault();
 
-            return primeCost is null ? (null, null) : (GetParsedDecimal(primeCost.WorkCost) * quantity, GetParsedDecimal(primeCost.MaterialCost) * quantity);
+            return primeCost is null ? (null, null) : (GetParsedDecimal(primeCost.WorkCost, LabelOf<PrimeCostModel>(nameof(PrimeCostModel.WorkCost)) ) * quantity, GetParsedDecimal(primeCost.MaterialCost, LabelOf<PrimeCostModel>(nameof(PrimeCostModel.MaterialCost))) * quantity);
         }
 
-        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeWbCosts(string articleName, string sku, decimal quantity)
+        private (decimal? WorkCost, decimal? MaterialCost) GetPrimeWbCosts(string articleName, string sku)
         {
             var primeCost = primeCostWbModels
                 .Where(x => x.ArticleName == articleName || x.Sku == sku)
                 .FirstOrDefault();
 
-            return primeCost is null ? (null, null) : (GetParsedDecimal(primeCost.WorkCost) * quantity, GetParsedDecimal(primeCost.MaterialCost) * quantity);
+            try
+            {
+                if(primeCost == null) 
+                    return (null, null);
+
+                var parsedWorkCost = GetParsedDecimal(primeCost.WorkCost, LabelOf<PrimeCostWbModel>(nameof(PrimeCostWbModel.WorkCost)));
+                var parsedMaterialCost = GetParsedDecimal(primeCost.MaterialCost, LabelOf<PrimeCostWbModel>(nameof(PrimeCostWbModel.MaterialCost)));
+                return (parsedWorkCost, parsedMaterialCost);
+            }
+            catch (Exception)
+            {
+                return (null, null);
+            }
         }
 
-        protected static decimal GetParsedDecimal(string textPrice, bool isPriceInverted = false)
+        protected static decimal GetParsedDecimal(string textPrice, string fieldName = "", bool isPriceInverted = false)
         {
             var processedTextPrice = textPrice.Replace(" ", "").Replace(",", ".");
             if (decimalParceRegex.Match(processedTextPrice).Success)
@@ -370,9 +426,14 @@ namespace ExcelWebApp2.Repositories
 
             var result = decimal.TryParse(processedTextPrice, NumberStyles.Any, new NumberFormatInfo() { NumberDecimalSeparator = "." }, out var decimalPrice)
                 ? decimalPrice
-                : throw new Exception($"Значение '{textPrice}'не может быть конвертировано в цену");
+                : throw new Exception($"Значение '{textPrice}' поля '{fieldName}' не может быть конвертировано в цену");
 
             return isPriceInverted ? -Math.Round(result, 2) : Math.Round(result, 2);
+        }
+
+        private static string LabelOf<T>(string propertyName)
+        {
+            return typeof(T).GetProperty(propertyName)?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? propertyName;
         }
     }
 }

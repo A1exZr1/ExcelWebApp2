@@ -2,7 +2,7 @@
 
 namespace ExcelWebApp2.Models
 {
-    public class    AccrualRecordWbModel
+    public class AccrualRecordWbModel
     {
         [Description("Предмет")]
         public string ArticleName { get; set; } = string.Empty;
@@ -39,6 +39,12 @@ namespace ExcelWebApp2.Models
 
         [Description("Общая сумма штрафов")]
         public string TotalAmountOfFines { get; set; } = string.Empty;
+
+        [Description("Хранение")]
+        public string StorageFee { get; set; } = string.Empty;
+
+        [Description("Удержания")]
+        public string Withholdings { get; set; } = string.Empty;
 
     }
 }

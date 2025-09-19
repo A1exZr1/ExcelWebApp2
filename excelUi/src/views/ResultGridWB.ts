@@ -1,14 +1,21 @@
-export default class ResultGridOzonV1 {
+export default class ResultGridWB {
   constructor(
     public articleName: string,
     public sku: string,
+    public supplierArticleName: string,
     public quantity: number,
-    public totalSumm: number,
-    public revenue: number,
-    public advertisingCost: number,
+    public retailPriceSumm: number,
+    public amountPayableToSellerSumm: number,
+
+    public logisticsFee: number,
+    public cancelledQuantity: number,
+    public cancelledSumm: number,
+    public paidAcceptanceSumm: number,
+    public totalAmountOfFines: number,
+    public returnedQuantity: number,
+    public returnedSumm: number,
     public workCost: number | null,
     public materialCost: number | null,
-    public unlinkedExpenses: number,
     public netProfit: number,
     public profitPercent: number,
   ) {}

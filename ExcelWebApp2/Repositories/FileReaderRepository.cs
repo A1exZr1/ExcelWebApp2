@@ -226,6 +226,8 @@ namespace ExcelWebApp2.Repositories
                     TypesOfLogisticsPenaltiesAndAdjustments = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TypesOfLogisticsPenaltiesAndAdjustments)]),
                     PaidAcceptance = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaidAcceptance)]),
                     TotalAmountOfFines = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TotalAmountOfFines)]),
+                    StorageFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.StorageFee)]),
+                    Withholdings = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Withholdings)]),
                 })
                 .ToList();
             return result;

@@ -167,5 +167,95 @@ namespace ExcelWebApp2.Repositories
             stream.Position = 0;
             return stream;
         }
+
+        public MemoryStream Export(List<ProcessedWbResultModel> data)
+        {
+            var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Results");
+            
+            int col = 1;
+            ws.Cell(1, col++).Value = "Артикул поставщика";
+            ws.Cell(1, col++).Value = "Предмет";
+            ws.Cell(1, col++).Value = "Код номенклатуры";
+            ws.Cell(1, col++).Value = "Цена розничная";
+            ws.Cell(1, col++).Value = "К перечислению продавцу за реализованный товар";
+            ws.Cell(1, col++).Value = "Количество продаж";
+            ws.Cell(1, col++).Value = "Логистика";
+            ws.Cell(1, col++).Value = "Количество отмен";
+            ws.Cell(1, col++).Value = "Отмены";
+            ws.Cell(1, col++).Value = "Платная приёмка";
+            ws.Cell(1, col++).Value = "Штрафы";
+            ws.Cell(1, col++).Value = "Количество возвратов";
+            ws.Cell(1, col++).Value = "Возвраты";
+            ws.Cell(1, col++).Value = "Стоимость работы";
+            ws.Cell(1, col++).Value = "Стоимость материалов";
+            ws.Cell(1, col++).Value = "Чистая прибыль";
+            ws.Cell(1, col++).Value = "% от выручки";
+
+
+            var headerRange = ws.Range(1, 1, 1, col - 1);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#f0f3f8");
+
+            var allColumnsCount = col - 1;
+            int row = 2;
+            foreach (var item in data)
+            {
+                col = 1;
+
+                bool isTotal = (item.ArticleName ?? "").StartsWith("Итого", StringComparison.CurrentCultureIgnoreCase);
+
+                if (isTotal)
+                {
+                    var rng = ws.Range(row, 1, row, allColumnsCount);
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Fill.BackgroundColor = XLColor.FromHtml("#f8f9fb");
+                }
+
+                if (item.WorkCost == null)
+                {
+                    var rng = ws.Range(row, 1, row, allColumnsCount);
+                    rng.Style.Fill.BackgroundColor = XLColor.LightPink;
+                }
+
+                ws.Cell(row, col++).Value = item.SupplierArticleName;
+                ws.Cell(row, col++).Value = item.ArticleName;
+                ws.Cell(row, col++).Value = item.Sku;
+                ws.Cell(row, col).Value = item.RetailPriceSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.AmountPayableToSellerSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.Quantity; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.LogisticsFee; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.CancelledQuantity; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.CancelledSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.PaidAcceptanceSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.TotalAmountOfFines; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.ReturnedQuantity; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.ReturnedSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.WorkCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.MaterialCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.NetProfit; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+
+                if (item.ProfitPercent.HasValue)
+                {
+                    ws.Cell(row, col).Value = item.ProfitPercent.Value / 100m;
+                    ws.Cell(row, col).Style.NumberFormat.Format = "0.00%";
+                }
+                else
+                {
+                    ws.Cell(row, col).Value = string.Empty;
+                }
+                col++;
+
+                row++;
+            }
+
+            ws.Columns().AdjustToContents();
+            var stream = new MemoryStream();
+            wb.SaveAs(stream);
+            stream.Position = 0;
+            return stream;
+        }
+
     }
 }

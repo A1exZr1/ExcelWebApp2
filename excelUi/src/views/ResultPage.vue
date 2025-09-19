@@ -86,6 +86,7 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { GridOptions, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community'
 import ResultGridOzonV1 from './ResultGridOzonV1'
 import ResultGridOzonV2 from './ResultGridOzonV2'
+import ResultGridWB from './ResultGridWB'
 import axios from 'axios'
 import FileSelectorDialog from './FileSelectorDialog.vue'
 
@@ -188,6 +189,10 @@ function onConfirmedLoadAndProcessAll() {
     loadProcessedOzonV1Data()
   } else if (activeTab.value.activeTab === 'ozon2') {
     loadProcessedOzonV2Data()
+  } else if (activeTab.value.activeTab === 'wb') {
+    mainColumnDefs.value = mainColumnDefsWb
+    gridApi.value?.setGridOption('columnDefs', mainColumnDefs.value)
+    loadProcessedWbData()
   } else {
     alert('Неизвестный тип загрузки')
   }
@@ -270,6 +275,42 @@ async function loadProcessedOzonV2Data() {
   }
 }
 
+async function loadProcessedWbData() {
+  if (!gridApi.value) return
+
+  try {
+    const response = await axios.get('/api/FileReader/GetWbResults')
+    rowMainData.value = response.data.map(
+      (item: any) =>
+        new ResultGridWB(
+          item.articleName,
+          item.sku,
+          item.supplierArticleName,
+          item.quantity,
+          item.retailPriceSumm,
+          item.amountPayableToSellerSumm,
+          item.logisticsFee,
+          item.cancelledQuantity,
+          item.cancelledSumm,
+          item.paidAcceptanceSumm,
+          item.totalAmountOfFines,
+          item.returnedQuantity,
+          item.returnedSumm,
+          item.workCost,
+          item.materialCost,
+          item.netProfit,
+          item.profitPercent,
+        ),
+    )
+    gridApi.value.setGridOption('rowData', rowMainData.value)
+    updateRowCounts()
+    updatePinnedTotals()
+  } catch (err) {
+    console.error(err)
+    alert('Ошибка при получении результатов')
+  }
+}
+
 function updatePinnedTotals(visibleOnly = true) {
   if (!gridApi.value) return
 
@@ -321,6 +362,24 @@ function updatePinnedTotals(visibleOnly = true) {
     }
     totals.additionalFees = fees
   }
+
+  if (activeTab.value?.activeTab === 'wb') {
+    totals.quantity = sum((r) => r.quantity)
+    totals.retailPriceSumm = sum((r) => r.retailPriceSumm)
+    totals.amountPayableToSellerSumm = sum((r) => r.amountPayableToSellerSumm)
+    totals.logisticsFee = sum((r) => r.logisticsFee)
+    totals.cancelledQuantity = sum((r) => r.cancelledQuantity)
+    totals.cancelledSumm = sum((r) => r.cancelledSumm)
+    totals.paidAcceptanceSumm = sum((r) => r.paidAcceptanceSumm)
+    totals.totalAmountOfFines = sum((r) => r.totalAmountOfFines)
+    totals.returnedQuantity = sum((r) => r.returnedQuantity)
+    totals.returnedSumm = sum((r) => r.returnedSumm)
+    totals.workCost = sum((r) => r.workCost)
+    totals.materialCost = sum((r) => r.materialCost)
+    totals.netProfit = sum((r) => r.netProfit)
+    totals.profitPercent = pct(totals.netProfit, totals.amountPayableToSellerSumm)
+  }
+
   gridApi.value?.setGridOption('pinnedBottomRowData', [totals])
 }
 
@@ -365,6 +424,121 @@ const mainColumnDefsOzonV1 = [
   {
     field: 'unlinkedExpenses',
     headerName: 'Нераспределённые расходы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'workCost',
+    headerName: 'Стоимость работы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'materialCost',
+    headerName: 'Стоимость материалов',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'netProfit',
+    headerName: 'Чистая прибыль',
+    minWidth: 130,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'profitPercent',
+    headerName: '% от выручки',
+    minWidth: 130,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => (params.value != null ? `${params.value.toFixed(2)}%` : 'н/д'),
+  },
+] as const satisfies ColDef[]
+
+const mainColumnDefsWb = [
+  {
+    field: 'supplierArticleName',
+    headerName: 'Артикул поставщика',
+    minWidth: 200,
+    sort: 'asc',
+    sortIndex: 0,
+    pinned: 'left',
+  },
+  {
+    field: 'articleName',
+    headerName: 'Предмет',
+    minWidth: 150,
+  },
+  { field: 'sku', headerName: 'Код номенклатуры', minWidth: 140, maxWidth: 150 },
+  {
+    field: 'retailPriceSumm',
+    headerName: 'Цена розничная',
+    minWidth: 150,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'amountPayableToSellerSumm',
+    headerName: 'К перечислению Продавцу за реализованный Товар',
+    minWidth: 150,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'quantity',
+    headerName: 'Количество продаж',
+    minWidth: 80,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'logisticsFee',
+    headerName: 'Логистика',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'cancelledQuantity',
+    headerName: 'Количество отмен',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'cancelledSumm',
+    headerName: 'Отмены',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'paidAcceptanceSumm',
+    headerName: 'Платная приемка',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'totalAmountOfFines',
+    headerName: 'Штрафы',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'returnedQuantity',
+    headerName: 'Количество возвратов',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'returnedSumm',
+    headerName: 'Возвраты',
     minWidth: 100,
     filter: 'agNumberColumnFilter',
     valueFormatter: (params: any) => params.value?.toFixed(2),
@@ -523,6 +697,8 @@ async function onExportDataAsExcel() {
       queryUrl = '/api/FileReader/ExportProcessedResultsV1'
     } else if (activeTab.value?.activeTab === 'ozon2') {
       queryUrl = '/api/FileReader/ExportProcessedResultsV2'
+    } else if (activeTab.value?.activeTab === 'wb') {
+      queryUrl = '/api/FileReader/ExportProcessedResultsWb'
     } else {
       alert('Неизвестный тип экспорта')
       return
@@ -538,10 +714,7 @@ async function onExportDataAsExcel() {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     })
 
-    const fileName =
-      activeTab.value?.activeTab === 'ozon2'
-        ? 'processed_results_v2.xlsx'
-        : 'processed_results_v1.xlsx'
+    const fileName = `processed_results_${activeTab.value?.activeTab || 'data'}.xlsx`
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

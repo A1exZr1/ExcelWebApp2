@@ -136,6 +136,20 @@ namespace ExcelWebApp2.Controllers
             return Ok(results);
         }
 
+        [HttpGet("GetWbResults")]
+        public IActionResult GetWbResults()
+        {
+            if (!processorRepository.HasAllInputs(ProcessingType.Wildberries))
+            {
+                var missing = processorRepository.GetMissingInputs(ProcessingType.Wildberries);
+                if (!string.IsNullOrEmpty(missing))
+                    return BadRequest("Не все входные файлы были загружены.\n" + missing);
+            }
+
+            var results = processorRepository.ProcessWb();
+            return Ok(results);
+        }
+
         [HttpPost("Reset")]
         public IActionResult Reset()
         {
@@ -159,6 +173,20 @@ namespace ExcelWebApp2.Controllers
 
         [HttpPost("ExportProcessedResultsV2")]
         public IActionResult ExportProcessedResultsV2([FromBody] List<ProcessedOzonResultV2Model> rows)
+        {
+            if (rows == null || rows.Count == 0)
+                return BadRequest("Нет обработанных данных");
+
+            var stream = excelExportService.Export(rows);
+            return File(
+                stream,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "processed_results.xlsx"
+            );
+        }
+
+        [HttpPost("ExportProcessedResultsWb")]
+        public IActionResult ExportProcessedResultsWb([FromBody] List<ProcessedWbResultModel> rows)
         {
             if (rows == null || rows.Count == 0)
                 return BadRequest("Нет обработанных данных");
