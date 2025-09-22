@@ -76,12 +76,6 @@ namespace ExcelWebApp2.Repositories
 
             var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
-
-            var headerCheckingRow = "Дата начисления;Тип начисления;Номер отправления или идентификатор услуги;Дата принятия заказа в обработку или оказания услуги;Склад отгрузки;SKU;Артикул;Название товара или услуги;Количество;За продажу или возврат до вычета комиссий и услуг;Вознаграждение Ozon, %;Вознаграждение Ozon;Сборка заказа;Обработка отправления (Drop-off/Pick-up) (разбивается по товарам пропорционально количеству в отправлении);Магистраль;Последняя миля (разбивается по товарам пропорционально доле цены товара в сумме отправления);Обратная магистраль;Обработка возврата;Обработка отмененного или невостребованного товара (разбивается по товарам в отправлении в одинаковой пропорции);Обработка невыкупленного товара;Логистика;Индекс локализации;Среднее время доставки, часы;Обратная логистика;Итого, руб.";
-
-            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
-
             var headerIndexes = GetHeaderIndexes<AccrualRecordV2Model>(headerRow);
 
             var result = rows
@@ -114,12 +108,6 @@ namespace ExcelWebApp2.Repositories
 
             var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
-
-            var headerCheckingRow = "ID начисления;Дата начисления;Группа услуг;Тип начисления;Артикул;SKU;Название товара;Количество;Цена продавца;Дата принятия заказа в обработку или оказания услуги;Схема работы;Вознаграждение Ozon, %;Индекс локализации, %;Среднее время доставки, часы;Сумма итого, руб";
-
-            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
-
             var headerIndexes = GetHeaderIndexes<AccrualRecordV1Model>(headerRow);
 
             var result = rows
@@ -145,12 +133,6 @@ namespace ExcelWebApp2.Repositories
 
             var rows = (worksheet.RangeUsed()?.RowsUsed().Skip(1).ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
-
-            var headerCheckingRow = "SKU;Тип продвижения;ID кампании;Расход, ₽, с НДС;ДРР, %;Продажи, ₽;Заказы, шт;CTR, %;Показы;Клики;Стоимость заказа, ₽;Стоимость клика, ₽;Корзины;Конверсия в корзину, %";
-
-            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
-
             var headerIndexes = GetHeaderIndexes<AdvertisingModel>(headerRow);
 
             var result = rows
@@ -173,12 +155,6 @@ namespace ExcelWebApp2.Repositories
 
             var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст.");
             var headerRow = rows.First();
-
-            var headerCheckingRow = "Артикул;Себестоимость материалов;Цена работы;Итого";
-
-            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
-
             var headerIndexes = GetHeaderIndexes<PrimeCostModel>(headerRow);
 
             var result = rows
@@ -202,12 +178,6 @@ namespace ExcelWebApp2.Repositories
 
             var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст");
             var headerRow = rows.First();
-
-            var headerCheckingRow = "№;Номер поставки;Предмет;Код номенклатуры;Бренд;Артикул поставщика;Название;Размер;Баркод;Тип документа;Обоснование для оплаты;Дата заказа покупателем;Дата продажи;Кол-во;Цена розничная;Вайлдберриз реализовал Товар (Пр);Согласованный продуктовый дисконт, %;Промокод, %;Итоговая согласованная скидка, %;Цена розничная с учетом согласованной скидки;Размер снижения кВВ из-за рейтинга, %;Размер изменения кВВ из-за акции, %;Скидка постоянного Покупателя (СПП), %;Размер кВВ, %;Размер  кВВ без НДС, % Базовый;Итоговый кВВ без НДС, %;Вознаграждение с продаж до вычета услуг поверенного, без НДС;Возмещение за выдачу и возврат товаров на ПВЗ;Эквайринг/Комиссии за организацию платежей;Размер комиссии за эквайринг/Комиссии за организацию платежей, %;Тип платежа за Эквайринг/Комиссии за организацию платежей;Вознаграждение Вайлдберриз (ВВ), без НДС;НДС с Вознаграждения Вайлдберриз;К перечислению Продавцу за реализованный Товар;Количество доставок;Количество возврата;Услуги по доставке товара покупателю;Дата начала действия фиксации;Дата конца действия фиксации;Признак услуги платной доставки;Общая сумма штрафов;Корректировка Вознаграждения Вайлдберриз (ВВ);Виды логистики, штрафов и корректировок ВВ;Стикер МП;Наименование банка-эквайера;Номер офиса;Наименование офиса доставки;ИНН партнера;Партнер;Склад;Страна;Тип коробов;Номер таможенной декларации;Номер сборочного задания;Код маркировки;ШК;Srid;Возмещение издержек по перевозке/по складским операциям с товаром;Организатор перевозки;Хранение;Удержания;Платная приемка;Фиксированный коэффициент склада по поставке;Признак продажи юридическому лицу;Номер короба для платной приемки;Скидка по программе софинансирования;Скидка Wibes, %;Сумма удержанная за начисленные баллы программы лояльности;Компенсация скидки по программе лояльности";
-
-            if (!IsHeadersCorrect([.. headerRow.Cells().Select(c => c.GetValue<string>())], headerCheckingRow))
-                throw new FileReaderException("Ошибка: строка с заголовками в файле отличается от ожидаемой. Проверьте, что вы загрузили верный шаблон.");
-
             var headerIndexes = GetHeaderIndexes<AccrualRecordWbModel>(headerRow);
 
             var result = rows
