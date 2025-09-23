@@ -1,4 +1,5 @@
 ﻿using ExcelWebApp2.Models;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
@@ -267,6 +268,10 @@ namespace ExcelWebApp2.Repositories
                     var supplierArticleName = group.Key.SupplierArticleName;
                     var sku = group.Key.Sku;
                     var articleName = group.FirstOrDefault()?.ArticleName ?? string.Empty;
+                    if(sku == "181105996")
+                    {
+                        var temp = 0;
+                    }
                     try
                     {
                         // цена розничная
@@ -316,7 +321,7 @@ namespace ExcelWebApp2.Repositories
                         var allMaterialCost = (materialCost ?? 0) * quantity;
 
                         var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
-                            payableFinesSumm - (returnSumm * returnQuantity) + (returnQuantity * (materialCost ?? 0)), 3);
+                            payableFinesSumm - returnQuantity + (returnQuantity * (materialCost ?? 0)), 3);
 
                         return new ProcessedWbResultModel
                         {
