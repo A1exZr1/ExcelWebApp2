@@ -7,7 +7,13 @@ namespace ExcelWebApp2
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            //var builder = WebApplication.CreateBuilder(args);
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+                ContentRootPath = AppContext.BaseDirectory
+            });
             var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
             builder.Environment.WebRootPath = webRoot;
 
