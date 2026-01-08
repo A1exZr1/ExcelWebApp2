@@ -34,7 +34,7 @@ namespace ExcelWebApp2.Models
         [Description("Виды логистики, штрафов и корректировок ВВ")]
         public string TypesOfLogisticsPenaltiesAndAdjustments { get; set; } = string.Empty;
 
-        [Description("Платная приемка")]
+        [Description("Операции на приемке")]
         public string PaidAcceptance { get; set; } = string.Empty;  
 
         [Description("Общая сумма штрафов")]
