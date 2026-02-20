@@ -175,6 +175,7 @@ namespace ExcelWebApp2.Repositories
             
             int col = 1;
             ws.Cell(1, col++).Value = "Артикул поставщика";
+            ws.Cell(1, col++).Value = "Бренд";
             ws.Cell(1, col++).Value = "Предмет";
             ws.Cell(1, col++).Value = "Код номенклатуры";
             ws.Cell(1, col++).Value = "Цена розничная";
@@ -187,6 +188,8 @@ namespace ExcelWebApp2.Repositories
             ws.Cell(1, col++).Value = "Штрафы";
             ws.Cell(1, col++).Value = "Количество возвратов";
             ws.Cell(1, col++).Value = "Возвраты";
+            ws.Cell(1, col++).Value = "Реклама";
+            ws.Cell(1, col++).Value = "Отзывы за баллы";
             ws.Cell(1, col++).Value = "Стоимость работы";
             ws.Cell(1, col++).Value = "Стоимость материалов";
             ws.Cell(1, col++).Value = "Чистая прибыль";
@@ -220,6 +223,7 @@ namespace ExcelWebApp2.Repositories
                 }
 
                 ws.Cell(row, col++).Value = item.SupplierArticleName;
+                ws.Cell(row, col++).Value = item.Brand;
                 ws.Cell(row, col++).Value = item.ArticleName;
                 ws.Cell(row, col++).Value = item.Sku;
                 ws.Cell(row, col).Value = item.RetailPriceSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
@@ -232,6 +236,8 @@ namespace ExcelWebApp2.Repositories
                 ws.Cell(row, col).Value = item.TotalAmountOfFines; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReturnedQuantity; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReturnedSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.AdvertisingCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.ReviewPointsCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.WorkCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.MaterialCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.NetProfit; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";

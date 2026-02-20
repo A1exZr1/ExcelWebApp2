@@ -5,6 +5,7 @@
         public string ArticleName { get; set; } = string.Empty;
         public string Sku { get; set; } = string.Empty;
         public string SupplierArticleName { get; set; } = string.Empty;
+        public string Brand { get; set; } = string.Empty;
         
         public decimal Quantity { get; set; }
         public decimal RetailPriceSumm { get; set; }
@@ -17,6 +18,8 @@
         public decimal TotalAmountOfFines { get; set; }
         public int ReturnedQuantity { get; set; }
         public decimal ReturnedSumm { get; set; }
+        public decimal AdvertisingCost { get; set; }
+        public decimal ReviewPointsCost { get; set; }
 
         public decimal? WorkCost { get; set; }
         public decimal? MaterialCost { get; set; }

@@ -82,17 +82,17 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new AccrualRecordV2Model
                 {
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.ArticleName)]),
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Sku)]),
-                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.AccrualType)]),
-                    Warehouse = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Warehouse)]),
-                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Quantity)]),
-                    PreCommissionAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.PreCommissionAmount)]),
-                    OzonFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.OzonFee)]),
-                    HandlingFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.HandlingFee)]),
-                    LastMileFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LastMileFee)]),
-                    LogisticsFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LogisticsFee)]),
-                    TotalAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.TotalAmount)])
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.ArticleName)], nameof(AccrualRecordV2Model.ArticleName)),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Sku)], nameof(AccrualRecordV2Model.Sku)),
+                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.AccrualType)], nameof(AccrualRecordV2Model.AccrualType)),
+                    Warehouse = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Warehouse)], nameof(AccrualRecordV2Model.Warehouse)),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.Quantity)], nameof(AccrualRecordV2Model.Quantity)),
+                    PreCommissionAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.PreCommissionAmount)], nameof(AccrualRecordV2Model.PreCommissionAmount)),
+                    OzonFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.OzonFee)], nameof(AccrualRecordV2Model.OzonFee)),
+                    HandlingFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.HandlingFee)], nameof(AccrualRecordV2Model.HandlingFee)),
+                    LastMileFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LastMileFee)], nameof(AccrualRecordV2Model.LastMileFee)),
+                    LogisticsFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.LogisticsFee)], nameof(AccrualRecordV2Model.LogisticsFee)),
+                    TotalAmount = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV2Model.TotalAmount)], nameof(AccrualRecordV2Model.TotalAmount))
                 })
                 .ToList();
 
@@ -114,12 +114,12 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new AccrualRecordV1Model
                 {
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.ArticleName)]),
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Sku)]),
-                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.AccrualType)]),
-                    SellerCost = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SellerCost)]),
-                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Quantity)]),
-                    SummaryValue = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SummaryValue)]),
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.ArticleName)], nameof(AccrualRecordV1Model.ArticleName)),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Sku)], nameof(AccrualRecordV1Model.Sku)),
+                    AccrualType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.AccrualType)], nameof(AccrualRecordV1Model.AccrualType)),
+                    SellerCost = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SellerCost)], nameof(AccrualRecordV1Model.SellerCost)),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.Quantity)], nameof(AccrualRecordV1Model.Quantity)),
+                    SummaryValue = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordV1Model.SummaryValue)], nameof(AccrualRecordV1Model.SummaryValue)),
                 })
                 .ToList();
             return result;
@@ -139,9 +139,9 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new AdvertisingModel
                 {
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.Sku)]),
-                    PromotionType = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.PromotionType)]),
-                    Cost = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.Cost)])
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.Sku)], nameof(AdvertisingModel.Sku)),
+                    PromotionType = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.PromotionType)], nameof(AdvertisingModel.PromotionType)),
+                    Cost = row.GetFieldByIndex(headerIndexes[nameof(AdvertisingModel.Cost)], nameof(AdvertisingModel.Cost))
                 })
                 .ToList();
             return result;
@@ -161,10 +161,10 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new PrimeCostModel
                 {
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.ArticleName)]),
-                    MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.MaterialCost)]),
-                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.WorkCost)]),
-                    Total = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.Total)])
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.ArticleName)], nameof(PrimeCostModel.ArticleName)),
+                    MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.MaterialCost)], nameof(PrimeCostModel.MaterialCost)),
+                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.WorkCost)], nameof(PrimeCostModel.WorkCost)),
+                    Total = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostModel.Total)], nameof(PrimeCostModel.Total))
                 })
                 .ToList();
             return result;
@@ -184,20 +184,20 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new AccrualRecordWbModel
                 {
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.ArticleName)]),
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Sku)]),
-                    AmountPayableToSeller = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.AmountPayableToSeller)]),
-                    DocumentType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.DocumentType)]),
-                    Logistics = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Logistics)]),
-                    PaymentReason = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaymentReason)]),
-                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Quantity)]),
-                    RetailPrice = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.RetailPrice)]),
-                    SupplierArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.SupplierArticleName)]),
-                    TypesOfLogisticsPenaltiesAndAdjustments = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TypesOfLogisticsPenaltiesAndAdjustments)]),
-                    PaidAcceptance = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaidAcceptance)]),
-                    TotalAmountOfFines = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TotalAmountOfFines)]),
-                    StorageFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.StorageFee)]),
-                    Withholdings = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Withholdings)]),
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.ArticleName)], nameof(AccrualRecordWbModel.ArticleName)),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Sku)], nameof(AccrualRecordWbModel.Sku)),
+                    AmountPayableToSeller = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.AmountPayableToSeller)], nameof(AccrualRecordWbModel.AmountPayableToSeller)),
+                    DocumentType = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.DocumentType)], nameof(AccrualRecordWbModel.DocumentType)),
+                    Logistics = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Logistics)], nameof(AccrualRecordWbModel.Logistics)),
+                    PaymentReason = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaymentReason)], nameof(AccrualRecordWbModel.PaymentReason)),
+                    Quantity = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Quantity)], nameof(AccrualRecordWbModel.Quantity)),
+                    RetailPrice = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.RetailPrice)], nameof(AccrualRecordWbModel.RetailPrice)),
+                    SupplierArticleName = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.SupplierArticleName)], nameof(AccrualRecordWbModel.SupplierArticleName)),
+                    TypesOfLogisticsPenaltiesAndAdjustments = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TypesOfLogisticsPenaltiesAndAdjustments)], nameof(AccrualRecordWbModel.TypesOfLogisticsPenaltiesAndAdjustments)),
+                    PaidAcceptance = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.PaidAcceptance)], nameof(AccrualRecordWbModel.PaidAcceptance)),
+                    TotalAmountOfFines = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.TotalAmountOfFines)], nameof(AccrualRecordWbModel.TotalAmountOfFines)),
+                    StorageFee = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.StorageFee)], nameof(AccrualRecordWbModel.StorageFee)),
+                    Withholdings = row.GetFieldByIndex(headerIndexes[nameof(AccrualRecordWbModel.Withholdings)], nameof(AccrualRecordWbModel.Withholdings)),
                 })
                 .ToList();
             return result;
@@ -217,10 +217,11 @@ namespace ExcelWebApp2.Repositories
                 .Skip(1)
                 .Select(row => new PrimeCostWbModel
                 {
-                    Sku = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.Sku)]),
-                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.ArticleName)]),
-                    MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.MaterialCost)]),
-                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.WorkCost)]),
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.Sku)], nameof(PrimeCostWbModel.Sku)),
+                    ArticleName = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.ArticleName)], nameof(PrimeCostWbModel.ArticleName)),
+                    Brand = row.FindFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.Brand)], nameof(PrimeCostWbModel.Brand)) ?? string.Empty,
+                    MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.MaterialCost)], nameof(PrimeCostWbModel.MaterialCost)),
+                    WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.WorkCost)], nameof(PrimeCostWbModel.WorkCost)),
                 })
                 .ToList();
             return result;

@@ -10,6 +10,9 @@ namespace ExcelWebApp2.Models
         [Description("Артикул продавца")]
         public string ArticleName { get; set; } = string.Empty;
 
+        [Description("Бренд")]
+        public string Brand { get; set; } = string.Empty;
+
         [Description("Материалы")]
         public string MaterialCost { get; set; } = string.Empty;
 

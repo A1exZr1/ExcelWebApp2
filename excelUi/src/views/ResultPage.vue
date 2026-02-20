@@ -286,6 +286,7 @@ async function loadProcessedWbData() {
           item.articleName,
           item.sku,
           item.supplierArticleName,
+          item.brand,
           item.quantity,
           item.retailPriceSumm,
           item.amountPayableToSellerSumm,
@@ -296,6 +297,8 @@ async function loadProcessedWbData() {
           item.totalAmountOfFines,
           item.returnedQuantity,
           item.returnedSumm,
+          item.advertisingCost,
+          item.reviewPointsCost,
           item.workCost,
           item.materialCost,
           item.netProfit,
@@ -374,6 +377,8 @@ function updatePinnedTotals(visibleOnly = true) {
     totals.totalAmountOfFines = sum((r) => r.totalAmountOfFines)
     totals.returnedQuantity = sum((r) => r.returnedQuantity)
     totals.returnedSumm = sum((r) => r.returnedSumm)
+    totals.advertisingCost = sum((r) => r.advertisingCost)
+    totals.reviewPointsCost = sum((r) => r.reviewPointsCost)
     totals.workCost = sum((r) => r.workCost)
     totals.materialCost = sum((r) => r.materialCost)
     totals.netProfit = sum((r) => r.netProfit)
@@ -472,6 +477,11 @@ const mainColumnDefsWb = [
     headerName: 'Предмет',
     minWidth: 150,
   },
+  {
+    field: 'brand',
+    headerName: 'Бренд',
+    minWidth: 130,
+  },
   { field: 'sku', headerName: 'Код номенклатуры', minWidth: 140, maxWidth: 150 },
   {
     field: 'retailPriceSumm',
@@ -540,6 +550,20 @@ const mainColumnDefsWb = [
     field: 'returnedSumm',
     headerName: 'Возвраты',
     minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'advertisingCost',
+    headerName: 'Реклама',
+    minWidth: 100,
+    filter: 'agNumberColumnFilter',
+    valueFormatter: (params: any) => params.value?.toFixed(2),
+  },
+  {
+    field: 'reviewPointsCost',
+    headerName: 'Отзывы за баллы',
+    minWidth: 140,
     filter: 'agNumberColumnFilter',
     valueFormatter: (params: any) => params.value?.toFixed(2),
   },
