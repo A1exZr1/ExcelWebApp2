@@ -377,7 +377,7 @@ namespace ExcelWebApp2.Repositories
                         var allMaterialCost = (materialCost ?? 0) * quantity;
 
                         var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
-                            payableFinesSumm - returnSumm - (proportionalAdvertisingCost ?? 0) - (proportionalreviewPointsCost ?? 0) + (returnQuantity * (materialCost ?? 0)), 3);
+                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)), 3);
 
                         return new ProcessedWbResultModel
                         {
