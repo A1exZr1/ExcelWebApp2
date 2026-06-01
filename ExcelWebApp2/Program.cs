@@ -1,4 +1,5 @@
 using ExcelWebApp2.Repositories;
+using ExcelWebApp2.Repositories.Processing;
 
 namespace ExcelWebApp2
 {
@@ -13,6 +14,9 @@ namespace ExcelWebApp2
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer(); // Required for Swagger
             builder.Services.AddScoped<FileReaderRepository>();
+            builder.Services.AddSingleton<IOzonV1Processor, OzonV1Processor>();
+            builder.Services.AddSingleton<IOzonV2Processor, OzonV2Processor>();
+            builder.Services.AddSingleton<IWildberriesProcessor, WildberriesProcessor>();
             builder.Services.AddSingleton<ProcessorRepository>();
             builder.Services.AddScoped<ExcelExportService>();
             builder.Services.AddSwaggerGen(options =>
