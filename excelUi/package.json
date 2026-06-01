@@ -3,77 +3,33 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "electron.mjs",
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix",
-    "format": "prettier --write src/",
-    "electron": "electron electron.mjs",
-    "build-electron": "electron-builder"
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "ag-grid-vue3": "^34.0.1",
-    "axios": "^1.10.0",
-    "sass": "^1.89.2",
-    "sass-loader": "^16.0.5",
-    "vite-plugin-vuetify": "^2.1.1",
-    "vue": "^3.5.17",
-    "vue-axios": "^3.5.2",
-    "vuetify": "^3.9.0"
+    "ag-grid-vue3": "^34.3.1",
+    "axios": "^1.16.1",
+    "sass": "^1.100.0",
+    "sass-loader": "^16.0.8",
+    "vite-plugin-vuetify": "^2.1.3",
+    "vue": "^3.5.35",
+    "vuetify": "^3.12.7"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.2",
-    "@types/node": "^22.15.32",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "@vue/eslint-config-typescript": "^14.5.1",
-    "@vue/tsconfig": "^0.7.0",
-    "electron": "^37.2.1",
-    "electron-builder": "^26.0.12",
-    "eslint": "^9.29.0",
-    "eslint-plugin-vue": "~10.2.0",
-    "jiti": "^2.4.2",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^22.19.19",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/tsconfig": "^0.9.1",
     "npm-run-all2": "^8.0.4",
-    "prettier": "3.5.3",
+    "prettier": "^3.8.3",
     "typescript": "~5.8.0",
-    "vite": "^7.0.0",
-    "vite-plugin-vue-devtools": "^7.7.7",
-    "vue-tsc": "^2.2.10"
-  },
-  "build": {
-    "appId": "com.yourcompany.excelapp",
-    "productName": "Excel Processor",
-    "directories": {
-      "buildResources": "build",
-      "output": "dist_electron"
-    },
-    "files": [
-      "dist/**/*",
-      "electron.mjs"
-    ],
-    "extraResources": [
-      {
-        "from": "../ExcelWebApp2/bin/Release/net8.0/win-x64/publish",
-        "to": "publish",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-	"win": {
-	  "target": "portable",
-	  "icon": "build/icon.ico"
-	},
-    "nsis": {
-      "oneClick": false,
-      "perMachine": true,
-      "allowElevation": true,
-      "allowToChangeInstallationDirectory": true
-    }
+    "vite": "^7.3.3",
+    "vue-tsc": "^3.3.3"
   }
 }

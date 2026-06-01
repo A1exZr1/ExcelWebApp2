@@ -26,8 +26,6 @@
 </template>
 
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint- */
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 

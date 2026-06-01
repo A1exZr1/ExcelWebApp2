@@ -4,24 +4,34 @@ import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    vuetify({ autoImport: true }) 
-  ],
+  plugins: [vue(), vuetify({ autoImport: true })],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
-    extensions: ['.js', '.ts', '.vue']
+    extensions: ['.js', '.ts', '.vue'],
   },
   server: {
     port: 8080,
-	proxy: {
+    proxy: {
       '/api': {
-        target: 'https://localhost:7093', 
+        target: 'https://localhost:7093',
         changeOrigin: true,
-        secure: false, //
-      }
-    }
-  }
+        secure: false,
+      },
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ['vue'],
+          vuetify: ['vuetify'],
+          'ag-grid': ['ag-grid-community', 'ag-grid-vue3'],
+          axios: ['axios'],
+        },
+      },
+    },
+  },
 })

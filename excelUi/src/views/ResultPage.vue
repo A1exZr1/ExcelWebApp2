@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { GridOptions, ColDef, GridApi, GridReadyEvent, RowClassParams } from 'ag-grid-community'
