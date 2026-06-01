@@ -20,6 +20,7 @@
         public decimal ReturnedSumm { get; set; }
         public decimal AdvertisingCost { get; set; }
         public decimal ReviewPointsCost { get; set; }
+        public decimal CancellationWorkCost { get; set; }
 
         public decimal? WorkCost { get; set; }
         public decimal? MaterialCost { get; set; }

@@ -1,7 +1,7 @@
 <template>
   <v-dialog width="700" persistent :model-value="isVisible">
     <v-card style="height: 100vh; display: flex; flex-direction: column">
-      <v-container height="300">
+      <v-container height="400">
         <v-tabs v-model="activeTab" align-tabs="center" color="primary">
           <v-tab value="ozon1" text="Ozon V1" style="min-width: 120px; height: 50px" />
           <v-tab value="ozon2" text="Ozon V2" style="min-width: 120px; height: 50px" />
@@ -69,9 +69,27 @@
                 ref="accrualsUploaderWb"
               />
               <FileUploader
+                class="pb-2"
+                label="файл отмен"
+                endpoint="/api/FileReader/ReadWbCancellations"
+                ref="cancellationsUploaderWb"
+              />
+              <FileUploader
+                class="pb-2"
                 label="файл себестоимости"
                 endpoint="/api/FileReader/PrimeCostModelWb"
                 ref="primeUploaderWb"
+              />
+              <v-text-field
+                v-model.number="wbReturnMaterialDamagePercent"
+                label="Потери материалов при возврате, %"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                variant="solo-filled"
+                density="compact"
+                hide-details
               />
             </div>
           </v-tabs-window-item>
@@ -107,7 +125,9 @@ const adsUploader = ref()
 const primeUploader1 = ref()
 const primeUploader2 = ref()
 const accrualsUploaderWb = ref()
+const cancellationsUploaderWb = ref()
 const primeUploaderWb = ref()
+const wbReturnMaterialDamagePercent = ref(15)
 const isLoading = ref(false)
 
 const props = defineProps({
@@ -122,6 +142,7 @@ const isAnyBadFileSelected = computed(
     primeUploader1.value?.isBadFileSelected ||
     primeUploader2.value?.isBadFileSelected ||
     accrualsUploaderWb.value?.isBadFileSelected ||
+    cancellationsUploaderWb.value?.isBadFileSelected ||
     primeUploaderWb.value?.isBadFileSelected,
 )
 
@@ -143,6 +164,8 @@ const canUpload = computed(() => {
     return (
       accrualsUploaderWb.value?.hasFile &&
       primeUploaderWb.value?.hasFile &&
+      wbReturnMaterialDamagePercent.value >= 0 &&
+      wbReturnMaterialDamagePercent.value <= 100 &&
       !isAnyBadFileSelected.value
     )
   }
@@ -187,7 +210,12 @@ async function onConfirmClick() {
   if (activeTab.value == 'wb') {
     try {
       isLoading.value = true
-      await Promise.all([accrualsUploaderWb.value?.upload(), primeUploaderWb.value?.upload()])
+      const uploads = [accrualsUploaderWb.value?.upload(), primeUploaderWb.value?.upload()]
+      if (cancellationsUploaderWb.value?.hasFile) {
+        uploads.push(cancellationsUploaderWb.value.upload())
+      }
+
+      await Promise.all(uploads)
       if (isAnyBadFileSelected.value) return
       emit('confirmed')
     } finally {
@@ -202,6 +230,7 @@ function onCancelClick() {
 
 defineExpose({
   activeTab: activeTab,
+  wbReturnMaterialDamagePercent: wbReturnMaterialDamagePercent,
 })
 </script>
 

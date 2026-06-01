@@ -17,6 +17,7 @@ export default class ResultGridWB {
     public returnedSumm: number,
     public advertisingCost: number,
     public reviewPointsCost: number,
+    public cancellationWorkCost: number,
     public workCost: number | null,
     public materialCost: number | null,
     public netProfit: number,

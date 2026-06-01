@@ -6,6 +6,8 @@ namespace ExcelWebApp2.Repositories.Processing
     {
         List<ProcessedWbResultModel> Process(
             IReadOnlyCollection<AccrualRecordWbModel> accruals,
-            IReadOnlyCollection<PrimeCostWbModel> primeCosts);
+            IReadOnlyCollection<PrimeCostWbModel> primeCosts,
+            IReadOnlyCollection<WbCancellationModel> cancellations,
+            decimal returnMaterialDamagePercent);
     }
 }

@@ -108,6 +108,21 @@ namespace ExcelWebApp2.Controllers
             return Ok(new { count = result.Data.Count, message = result.Message });
         }
 
+        [HttpPost("ReadWbCancellations")]
+        public async Task<IActionResult> ReadWbCancellations(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Файл не загружен.");
+
+            var result = await fileReaderRepository.ReadExcelFile<WbCancellationModel>(file);
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            processorRepository.SetWbCancellations(result.Data);
+            return Ok(new { count = result.Data.Count, message = result.Message });
+        }
+
         [HttpGet("GetOzonV1Results")]
         public IActionResult GetOzonV1Results()
         {
@@ -137,7 +152,7 @@ namespace ExcelWebApp2.Controllers
         }
 
         [HttpGet("GetWbResults")]
-        public IActionResult GetWbResults()
+        public IActionResult GetWbResults([FromQuery] decimal returnMaterialDamagePercent = 15)
         {
             if (!processorRepository.HasAllInputs(ProcessingType.Wildberries))
             {
@@ -146,7 +161,7 @@ namespace ExcelWebApp2.Controllers
                     return BadRequest("Не все входные файлы были загружены.\n" + missing);
             }
 
-            var results = processorRepository.ProcessWb();
+            var results = processorRepository.ProcessWb(returnMaterialDamagePercent);
             return Ok(results);
         }
 

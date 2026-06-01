@@ -63,7 +63,29 @@ public class WildberriesProcessorTests
             }
         };
 
-        var result = processor.Process(accruals, primeCosts);
+        var cancellations = new List<WbCancellationModel>
+        {
+            new()
+            {
+                SupplierArticleName = "ART-1",
+                Sku = "123",
+                Status = "Отсортировано"
+            },
+            new()
+            {
+                SupplierArticleName = "ART-1",
+                Sku = "123",
+                Status = "Отсортировано"
+            },
+            new()
+            {
+                SupplierArticleName = "ART-1",
+                Sku = "123",
+                Status = "Создано"
+            }
+        };
+
+        var result = processor.Process(accruals, primeCosts, cancellations, 15);
 
         Assert.Equal(3, result.Count);
 
@@ -79,8 +101,9 @@ public class WildberriesProcessorTests
         Assert.Equal(1, product.ReturnedQuantity);
         Assert.Equal(100m, product.WorkCost);
         Assert.Equal(200m, product.MaterialCost);
-        Assert.Equal(350m, product.NetProfit);
-        Assert.Equal(50m, product.ProfitPercent);
+        Assert.Equal(100m, product.CancellationWorkCost);
+        Assert.Equal(185m, product.NetProfit);
+        Assert.Equal(26.43m, product.ProfitPercent);
 
         var storage = result.Single(x => x.SupplierArticleName == "～ ХРАНЕНИЕ");
         Assert.Equal(-30m, storage.NetProfit);

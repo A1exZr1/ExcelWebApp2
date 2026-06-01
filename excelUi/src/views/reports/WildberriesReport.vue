@@ -25,6 +25,7 @@ import {
 
 const props = defineProps<{
   quickFilterText: string
+  returnMaterialDamagePercent?: number
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +66,11 @@ function onFilterChanged() {
 
 async function loadData() {
   try {
-    const response = await axios.get('/api/FileReader/GetWbResults')
+    const response = await axios.get('/api/FileReader/GetWbResults', {
+      params: {
+        returnMaterialDamagePercent: props.returnMaterialDamagePercent ?? 15,
+      },
+    })
     rowData.value = response.data.map(
       (item: any) =>
         new ResultGridWB(
@@ -85,6 +90,7 @@ async function loadData() {
           item.returnedSumm,
           item.advertisingCost,
           item.reviewPointsCost,
+          item.cancellationWorkCost,
           item.workCost,
           item.materialCost,
           item.netProfit,
@@ -132,6 +138,7 @@ function updatePinnedTotals() {
   totals.returnedSumm = sumRows(rows, (r) => r.returnedSumm)
   totals.advertisingCost = sumRows(rows, (r) => r.advertisingCost)
   totals.reviewPointsCost = sumRows(rows, (r) => r.reviewPointsCost)
+  totals.cancellationWorkCost = sumRows(rows, (r) => r.cancellationWorkCost)
   totals.workCost = sumRows(rows, (r) => r.workCost)
   totals.materialCost = sumRows(rows, (r) => r.materialCost)
   totals.netProfit = sumRows(rows, (r) => r.netProfit)
@@ -242,6 +249,13 @@ function buildColumns() {
       field: 'reviewPointsCost',
       headerName: 'Отзывы за баллы',
       minWidth: 140,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params: any) => params.value?.toFixed(2),
+    },
+    {
+      field: 'cancellationWorkCost',
+      headerName: 'Расходы работы при отмене',
+      minWidth: 160,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params: any) => params.value?.toFixed(2),
     },

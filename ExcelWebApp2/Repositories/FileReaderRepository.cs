@@ -49,6 +49,10 @@ namespace ExcelWebApp2.Repositories
                 {
                     rawResult = await Task.Run(() => ReadPrimeCostWb(stream));
                 }
+                else if (typeof(T) == typeof(WbCancellationModel))
+                {
+                    rawResult = await Task.Run(() => ReadWbCancellations(stream));
+                }
                 else
                 {
                     throw new NotSupportedException($"Не поддерживаемый тип {typeof(T).Name}");
@@ -229,6 +233,27 @@ namespace ExcelWebApp2.Repositories
                     Brand = row.FindFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.Brand)], nameof(PrimeCostWbModel.Brand)) ?? string.Empty,
                     MaterialCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.MaterialCost)], nameof(PrimeCostWbModel.MaterialCost)),
                     WorkCost = row.GetFieldByIndex(headerIndexes[nameof(PrimeCostWbModel.WorkCost)], nameof(PrimeCostWbModel.WorkCost)),
+                })
+                .ToList();
+            return result;
+        }
+
+        private static List<WbCancellationModel> ReadWbCancellations(Stream stream)
+        {
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
+
+            var rows = (worksheet.RangeUsed()?.RowsUsed().ToList()) ?? throw new FileReaderException("Файл пуст.");
+            var headerRow = rows.First();
+            var headerIndexes = GetHeaderIndexes<WbCancellationModel>(headerRow);
+
+            var result = rows
+                .Skip(1)
+                .Select(row => new WbCancellationModel
+                {
+                    Sku = row.GetFieldByIndex(headerIndexes[nameof(WbCancellationModel.Sku)], nameof(WbCancellationModel.Sku)),
+                    SupplierArticleName = row.GetFieldByIndex(headerIndexes[nameof(WbCancellationModel.SupplierArticleName)], nameof(WbCancellationModel.SupplierArticleName)),
+                    Status = row.GetFieldByIndex(headerIndexes[nameof(WbCancellationModel.Status)], nameof(WbCancellationModel.Status)),
                 })
                 .ToList();
             return result;

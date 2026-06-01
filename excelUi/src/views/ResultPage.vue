@@ -53,6 +53,7 @@
           v-if="activeReportComponent"
           ref="activeReportRef"
           :quick-filter-text="searchQuickFilterText"
+          :return-material-damage-percent="wbReturnMaterialDamagePercent"
           @rows-changed="onRowsChanged"
         />
       </div>
@@ -81,7 +82,8 @@ const isFileSelectorVisible = ref(false)
 const hasRows = ref(false)
 const activeReportType = ref<ReportType | null>(null)
 const activeReportRef = ref<ReportComponentExpose>()
-const fileSelectorDialog = ref<{ activeTab: ReportType }>()
+const fileSelectorDialog = ref<{ activeTab: ReportType; wbReturnMaterialDamagePercent: number }>()
+const wbReturnMaterialDamagePercent = ref(15)
 
 const reportComponents = {
   ozon1: OzonV1Report,
@@ -114,6 +116,9 @@ async function onConfirmedLoadAndProcessAll() {
     isLoading.value = true
     hasRows.value = false
     activeReportType.value = selectedReport
+    wbReturnMaterialDamagePercent.value = Number(
+      fileSelectorDialog.value?.wbReturnMaterialDamagePercent ?? 15,
+    )
     searchQuickFilterText.value = ''
 
     await nextTick()

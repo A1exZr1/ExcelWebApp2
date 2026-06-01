@@ -20,4 +20,33 @@ public class ProcessorRepositoryTests
         Assert.Contains("Файл отчёта по товарам отсутствует", missing);
         Assert.Contains("Файл рекламы отсутствует", missing);
     }
+
+    [Fact]
+    public void HasAllInputs_ForWildberries_DoesNotRequireCancellationFile()
+    {
+        var repository = new ProcessorRepository(
+            new OzonV1Processor(),
+            new OzonV2Processor(),
+            new WildberriesProcessor());
+
+        repository.SetAccrualsWb(
+        [
+            new AccrualRecordWbModel
+            {
+                SupplierArticleName = "ART-1",
+                Sku = "123"
+            }
+        ]);
+        repository.SetPrimeCostsWb(
+        [
+            new PrimeCostWbModel
+            {
+                ArticleName = "ART-1",
+                Sku = "123"
+            }
+        ]);
+
+        Assert.True(repository.HasAllInputs(ProcessingType.Wildberries));
+        Assert.DoesNotContain("Файл отмен отсутствует", repository.GetMissingInputs(ProcessingType.Wildberries));
+    }
 }

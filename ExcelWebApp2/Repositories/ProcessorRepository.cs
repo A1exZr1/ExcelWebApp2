@@ -11,6 +11,7 @@ namespace ExcelWebApp2.Repositories
         private List<AccrualRecordV1Model> _accrualsV1 = [];
         private List<AccrualRecordV2Model> _accrualsV2 = [];
         private List<AccrualRecordWbModel> _accrualsWb = [];
+        private List<WbCancellationModel> _wbCancellations = [];
         private List<AdvertisingModel> _ads = [];
         private List<PrimeCostModel> _primeCosts = [];
         private List<PrimeCostWbModel> _primeCostWbModels = [];
@@ -21,6 +22,7 @@ namespace ExcelWebApp2.Repositories
         public void SetAccrualsV1(List<AccrualRecordV1Model> accruals) => _accrualsV1 = accruals;
         public void SetAccrualsV2(List<AccrualRecordV2Model> accruals) => _accrualsV2 = accruals;
         public void SetAccrualsWb(List<AccrualRecordWbModel> accruals) => _accrualsWb = accruals;
+        public void SetWbCancellations(List<WbCancellationModel> cancellations) => _wbCancellations = cancellations;
         public void SetAds(List<AdvertisingModel> ads) => _ads = ads;
         public void SetPrimeCosts(List<PrimeCostModel> costs) => _primeCosts = costs;
         public void SetPrimeCostsWb(List<PrimeCostWbModel> costs) => _primeCostWbModels = costs;
@@ -45,6 +47,7 @@ namespace ExcelWebApp2.Repositories
             _processedResultsV1.Clear();
             _processedResultsV2.Clear();
             _accrualsWb.Clear();
+            _wbCancellations.Clear();
             _primeCostWbModels.Clear();
         }
 
@@ -86,9 +89,9 @@ namespace ExcelWebApp2.Repositories
             return _processedResultsV2;
         }
 
-        public List<ProcessedWbResultModel> ProcessWb()
+        public List<ProcessedWbResultModel> ProcessWb(decimal returnMaterialDamagePercent)
         {
-            _processedResultsWb = wildberriesProcessor.Process(_accrualsWb, _primeCostWbModels);
+            _processedResultsWb = wildberriesProcessor.Process(_accrualsWb, _primeCostWbModels, _wbCancellations, returnMaterialDamagePercent);
             return _processedResultsWb;
         }
     }

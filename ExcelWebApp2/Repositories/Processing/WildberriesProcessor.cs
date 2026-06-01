@@ -6,8 +6,12 @@ namespace ExcelWebApp2.Repositories.Processing
     {
         public List<ProcessedWbResultModel> Process(
             IReadOnlyCollection<AccrualRecordWbModel> accruals,
-            IReadOnlyCollection<PrimeCostWbModel> primeCosts)
+            IReadOnlyCollection<PrimeCostWbModel> primeCosts,
+            IReadOnlyCollection<WbCancellationModel> cancellations,
+            decimal returnMaterialDamagePercent)
         {
+            returnMaterialDamagePercent = Math.Clamp(returnMaterialDamagePercent, 0, 100);
+
             var primeBySku = primeCosts
                 .Where(x => !string.IsNullOrWhiteSpace(x.Sku))
                 .GroupBy(x => x.Sku.Trim(), StringComparer.OrdinalIgnoreCase)
@@ -28,6 +32,11 @@ namespace ExcelWebApp2.Repositories.Processing
 
                 return string.Empty;
             }
+
+            var sortedCancellationCounts = cancellations
+                .Where(x => x.Status.Equals("Отсортировано", StringComparison.OrdinalIgnoreCase))
+                .GroupBy(x => CreateCancellationKey(x.SupplierArticleName, x.Sku))
+                .ToDictionary(g => g.Key, g => g.Count());
 
             var fullRetailPriceSumm = accruals
                 .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
@@ -117,9 +126,12 @@ namespace ExcelWebApp2.Repositories.Processing
                         var (workCost, materialCost) = GetPrimeCosts(primeCosts, supplierArticleName, sku);
                         var allWorkCost = (workCost ?? 0) * quantity;
                         var allMaterialCost = (materialCost ?? 0) * quantity;
+                        var returnWorkCost = returnQuantity * (workCost ?? 0);
+                        var returnMaterialDamageCost = Math.Round(returnQuantity * (materialCost ?? 0) * returnMaterialDamagePercent / 100, 3);
+                        var cancellationWorkCost = GetCancellationCount(sortedCancellationCounts, supplierArticleName, sku) * (workCost ?? 0);
 
                         var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
-                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)), 3);
+                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)) - returnWorkCost - returnMaterialDamageCost - cancellationWorkCost, 3);
 
                         return new ProcessedWbResultModel
                         {
@@ -141,6 +153,7 @@ namespace ExcelWebApp2.Repositories.Processing
                             MaterialCost = materialCost is null ? null : allMaterialCost,
                             AdvertisingCost = proportionalAdvertisingCost ?? 0,
                             ReviewPointsCost = proportionalreviewPointsCost ?? 0,
+                            CancellationWorkCost = cancellationWorkCost,
                             NetProfit = netProfit,
                             ProfitPercent = amountPayableToSellerSumm != 0 ? Math.Round((netProfit / Math.Abs(amountPayableToSellerSumm)) * 100, 2) : null
                         };
@@ -186,6 +199,24 @@ namespace ExcelWebApp2.Repositories.Processing
             MaterialCost = 0,
             ProfitPercent = 0
         });
+
+        private static int GetCancellationCount(
+            IReadOnlyDictionary<CancellationKey, int> cancellationCounts,
+            string supplierArticleName,
+            string sku)
+        {
+            var key = CreateCancellationKey(supplierArticleName, sku);
+            return cancellationCounts.TryGetValue(key, out var count) ? count : 0;
+        }
+
+        private static CancellationKey CreateCancellationKey(string supplierArticleName, string sku)
+        {
+            return new CancellationKey(
+                supplierArticleName.Trim().ToUpperInvariant(),
+                sku.Trim().ToUpperInvariant());
+        }
+
+        private readonly record struct CancellationKey(string SupplierArticleName, string Sku);
 
         private static bool IsReviewBrand(string brand)
         {
