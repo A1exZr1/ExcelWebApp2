@@ -1,5 +1,4 @@
 using ExcelWebApp2.Repositories;
-using Microsoft.Extensions.FileProviders;
 
 namespace ExcelWebApp2
 {
@@ -7,14 +6,9 @@ namespace ExcelWebApp2
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-            {
-                Args = args,
-                WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot"),
-                ContentRootPath = AppContext.BaseDirectory
-            });
-            var webRoot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-            builder.Environment.WebRootPath = webRoot;
+            var builder = WebApplication.CreateBuilder(args);
+            var webRoot = builder.Environment.WebRootPath
+                ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer(); // Required for Swagger
@@ -38,31 +32,13 @@ namespace ExcelWebApp2
                 });
             }
 
-            app.UseHttpsRedirection();
             app.UseAuthorization();
 
             app.UseDefaultFiles();
-
-
             Console.WriteLine($"[INFO] Static files path: {webRoot}");
-            if (Directory.Exists(webRoot))
-            {
-                app.UseStaticFiles(new StaticFileOptions
-                {
-                    FileProvider = new PhysicalFileProvider(webRoot),
-                    RequestPath = ""
-                });
-            }
-            else
-            {
-                Console.WriteLine($"[WARNING] Static files folder not found: {webRoot}");
-                app.UseStaticFiles();
-            }
-
-            app.MapFallbackToFile("index.html");
-
-
+            app.UseStaticFiles();
             app.MapControllers();
+            app.MapFallbackToFile("index.html");
             app.Run();
         }
     }

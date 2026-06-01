@@ -15,13 +15,14 @@ export default defineConfig({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'https://localhost:7093',
+        target: 'http://localhost:5055',
         changeOrigin: true,
-        secure: false,
       },
     },
   },
   build: {
+    outDir: '../ExcelWebApp2/wwwroot',
+    emptyOutDir: true,
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
