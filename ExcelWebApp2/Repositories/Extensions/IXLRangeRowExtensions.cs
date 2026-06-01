@@ -20,7 +20,10 @@ namespace ExcelWebApp2.Repositories.Extensions
         public static string GetFieldByIndex(this IXLRangeRow row, int? index, string? fieldName = null)
         {
             if (index is null)
-                throw new FileReaderException("Can't get field for null index");
+                throw new FileReaderException(
+                    string.IsNullOrWhiteSpace(fieldName)
+                        ? "Не найдена обязательная колонка в файле."
+                        : $"Не найдена обязательная колонка для поля '{fieldName}'.");
             var cell = row.Cell((int)index);
             return GetCellStringValue(cell, fieldName);
         }

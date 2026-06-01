@@ -8,6 +8,13 @@ namespace ExcelWebApp2.Repositories
 {
     public class FileReaderRepository : FileReaderBase
     {
+        private static readonly Dictionary<Type, HashSet<string>> OptionalHeaders = new()
+        {
+            [typeof(PrimeCostWbModel)] = new HashSet<string>(StringComparer.Ordinal)
+            {
+                nameof(PrimeCostWbModel.Brand)
+            }
+        };
 
         public async Task<ReadResult<T>> ReadExcelFile<T>(IFormFile file)
         {
@@ -230,6 +237,7 @@ namespace ExcelWebApp2.Repositories
         private static Dictionary<string, int?> GetHeaderIndexes<T>(IXLRangeRow row)
         {
             var headerIndexes = new Dictionary<string, int?>();
+            var missingHeaders = new List<string>();
 
             foreach (var prop in typeof(T).GetProperties())
             {
@@ -239,9 +247,35 @@ namespace ExcelWebApp2.Repositories
 
                 var index = GetExactHeaderIndex(row, descriptionAttr.Description);
                 headerIndexes[prop.Name] = index;
+
+                if (index is null && !IsOptionalHeader<T>(prop.Name))
+                    missingHeaders.Add(descriptionAttr.Description);
+            }
+
+            if (missingHeaders.Count != 0)
+            {
+                var foundHeaders = row.CellsUsed()
+                    .Select(cell => Norm(cell.GetValue<string>()))
+                    .Where(header => !string.IsNullOrEmpty(header))
+                    .ToList();
+
+                var foundHeadersText = foundHeaders.Count == 0
+                    ? "заголовки не найдены"
+                    : string.Join("; ", foundHeaders.Take(30)) + (foundHeaders.Count > 30 ? "; ..." : string.Empty);
+
+                throw new FileReaderException(
+                    $"Не найдены обязательные колонки: {string.Join("; ", missingHeaders)}. " +
+                    $"Проверьте, что выбран правильный файл и строка заголовков соответствует шаблону. " +
+                    $"Найденные колонки: {foundHeadersText}");
             }
 
             return headerIndexes;
+        }
+
+        private static bool IsOptionalHeader<T>(string propertyName)
+        {
+            return OptionalHeaders.TryGetValue(typeof(T), out var optionalProperties)
+                && optionalProperties.Contains(propertyName);
         }
 
         private static int? GetExactHeaderIndex(IXLRangeRow headerRow, string header)

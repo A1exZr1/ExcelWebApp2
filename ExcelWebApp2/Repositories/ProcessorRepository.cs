@@ -52,27 +52,28 @@ namespace ExcelWebApp2.Repositories
 
         public string GetMissingInputs(ProcessingType processingType)
         {
-            var result = string.Empty;
-            if (_primeCosts.Count == 0) result += "Файл себестоимости отсутствует\n";
+            var missing = new List<string>();
 
-            if (processingType == ProcessingType.OzonV2)
+            switch (processingType)
             {
-                if (_accrualsV2.Count == 0) result += "Файл отчёта по товарам отсутствует\n";
-                return result;
+                case ProcessingType.OzonV1:
+                    if (_primeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    if (_accrualsV1.Count == 0) missing.Add("Файл отчёта по товарам отсутствует");
+                    if (_ads.Count == 0) missing.Add("Файл рекламы отсутствует");
+                    break;
+                case ProcessingType.OzonV2:
+                    if (_primeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    if (_accrualsV2.Count == 0) missing.Add("Файл отчёта по товарам отсутствует");
+                    break;
+                case ProcessingType.Wildberries:
+                    if (_accrualsWb.Count == 0) missing.Add("Файлы отчётов по товарам отсутствует");
+                    if (primeCostWbModels.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
-            else if (processingType == ProcessingType.OzonV1)
-            {
-                if (_accrualsV1.Count == 0) result += "Файл отчёта по товарам отсутствует\n";
-                if (_ads.Count == 0) result += "Файл рекламы отсутствует\n";
-                return result;
-            }
-            else if (processingType == ProcessingType.Wildberries)
-            {
-                if (_accrualsWb.Count == 0) result += "Файлы отчётов по товарам отсутствует\n";
-                if (primeCostWbModels.Count == 0) result += "Файл себестоимости отсутствует\n";
-                return result;
-            }
-            return result;
+
+            return string.Join('\n', missing);
         }
 
         public List<ProcessedOzonResultV1Model> ProcessOzonV1()
@@ -127,7 +128,7 @@ namespace ExcelWebApp2.Repositories
 
                     var (workCost, materialCost) = GetPrimeOzonCosts(articleName, quantity);
 
-                    var netProfit = Math.Round(summary - adCost - (workCost ?? 0) - (materialCost ?? 0) + proportionalUnlinkedExpense?? 0, 3);
+                    var netProfit = Math.Round(summary - adCost - (workCost ?? 0) - (materialCost ?? 0) + (proportionalUnlinkedExpense ?? 0), 3);
 
                     return new ProcessedOzonResultV1Model
                     {
@@ -194,7 +195,7 @@ namespace ExcelWebApp2.Repositories
 
                     var quantity = group
                         .Where(x => x.AccrualType.Equals("Доставка покупателю", StringComparison.OrdinalIgnoreCase))
-                        .Count();
+                        .Sum(x => GetParsedDecimal(x.Quantity, LabelOf<ProcessedOzonResultV2Model>(nameof(ProcessedOzonResultV2Model.Quantity))));
                     
                     var (workCost, materialCost) = GetPrimeOzonCosts(articleName, quantity);
 
@@ -262,20 +263,20 @@ namespace ExcelWebApp2.Repositories
         {
             var primeBySku = primeCostWbModels
                 .Where(x => !string.IsNullOrWhiteSpace(x.Sku))
-                .GroupBy(x => x.Sku, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(x => x.Sku.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             var primeByArticle = primeCostWbModels
                 .Where(x => !string.IsNullOrWhiteSpace(x.ArticleName))
-                .GroupBy(x => x.ArticleName, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(x => x.ArticleName.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             string GetBrand(string supplierArticleName, string sku)
             {
-                if (!string.IsNullOrWhiteSpace(sku) && primeBySku.TryGetValue(sku, out var bySku))
+                if (!string.IsNullOrWhiteSpace(sku) && primeBySku.TryGetValue(sku.Trim(), out var bySku))
                     return bySku.Brand?.Trim() ?? string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(supplierArticleName) && primeByArticle.TryGetValue(supplierArticleName, out var byArticle))
+                if (!string.IsNullOrWhiteSpace(supplierArticleName) && primeByArticle.TryGetValue(supplierArticleName.Trim(), out var byArticle))
                     return byArticle.Brand?.Trim() ?? string.Empty;
 
                 return string.Empty;
@@ -288,7 +289,8 @@ namespace ExcelWebApp2.Repositories
                 .Sum(x => GetParsedDecimal(x.RetailPrice, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.RetailPrice))));
 
             var fullRetailBrandPriceSumm = _accrualsWb
-                .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && IsReviewBrand(GetBrand(x.ArticleName, x.Sku)))
+                .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase) 
+                        && IsReviewBrand(GetBrand(x.SupplierArticleName, x.Sku)))
                 .Sum(x => GetParsedDecimal(x.RetailPrice, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.RetailPrice))));
 
             var fullAdvertisingCost = _accrualsWb
@@ -459,8 +461,7 @@ namespace ExcelWebApp2.Repositories
         private (decimal? WorkCost, decimal? MaterialCost) GetPrimeOzonCosts(string articleName, decimal quantity)
         {
             var primeCost = _primeCosts
-                .Where(x => x.ArticleName == articleName)
-                .FirstOrDefault();
+                .FirstOrDefault(x => x.ArticleName == articleName);
 
             return primeCost is null ? (null, null) : (GetParsedDecimal(primeCost.WorkCost, LabelOf<PrimeCostModel>(nameof(PrimeCostModel.WorkCost)) ) * quantity, GetParsedDecimal(primeCost.MaterialCost, LabelOf<PrimeCostModel>(nameof(PrimeCostModel.MaterialCost))) * quantity);
         }
@@ -468,8 +469,7 @@ namespace ExcelWebApp2.Repositories
         private (decimal? WorkCost, decimal? MaterialCost) GetPrimeWbCosts(string articleName, string sku)
         {
             var primeCost = primeCostWbModels
-                .Where(x => x.ArticleName == articleName || x.Sku == sku)
-                .FirstOrDefault();
+                .FirstOrDefault(x => x.ArticleName == articleName || x.Sku == sku);
 
             try
             {
