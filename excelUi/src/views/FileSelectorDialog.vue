@@ -1,7 +1,7 @@
 <template>
   <v-dialog width="700" persistent :model-value="isVisible">
     <v-card style="height: 100vh; display: flex; flex-direction: column">
-      <v-container height="400">
+      <v-container height="370">
         <v-tabs v-model="activeTab" align-tabs="center" color="primary">
           <v-tab value="ozon1" text="Ozon V1" style="min-width: 120px; height: 50px" />
           <v-tab value="ozon2" text="Ozon V2" style="min-width: 120px; height: 50px" />
@@ -16,7 +16,7 @@
           <v-tabs-window-item value="ozon1" style="height: 100%">
             <div
               class="d-flex flex-column pa-2"
-              style="width: 100%; height: 100%; overflow-y: auto"
+              style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
             >
               <FileUploader
                 class="pb-2"
@@ -40,7 +40,7 @@
           <v-tabs-window-item style="height: 100%" value="ozon2">
             <div
               class="d-flex flex-column pa-2"
-              style="width: 100%; height: 100%; overflow-y: auto"
+              style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
             >
               <FileUploader
                 class="pb-2"
@@ -57,8 +57,8 @@
           </v-tabs-window-item>
           <v-tabs-window-item style="height: 100%" value="wb">
             <div
-              class="d-flex flex-column pa-2"
-              style="width: 100%; height: 100%; overflow-y: auto"
+              class="flex-column pa-2"
+              style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
             >
               <FileUploader
                 class="pb-2"
@@ -70,27 +70,40 @@
               />
               <FileUploader
                 class="pb-2"
-                label="файл отмен"
-                endpoint="/api/FileReader/ReadWbCancellations"
-                ref="cancellationsUploaderWb"
-              />
-              <FileUploader
-                class="pb-2"
                 label="файл себестоимости"
                 endpoint="/api/FileReader/PrimeCostModelWb"
                 ref="primeUploaderWb"
               />
-              <v-text-field
-                v-model.number="wbReturnMaterialDamagePercent"
-                label="Потери материалов при возврате, %"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                variant="solo-filled"
-                density="compact"
-                hide-details
+              <FileUploader
+                class="pb-2"
+                label="файл отмен"
+                endpoint="/api/FileReader/ReadWbCancellations"
+                ref="cancellationsUploaderWb"
               />
+              <div class="d-flex ">
+                <div class="d-flex ml-3" style="width: 40%">
+                  <v-switch
+                    v-model="useDefaultDamagePercent"
+                    color="primary"
+                    label="Использовать
+                    стандартное значение"
+                  ></v-switch>
+                </div>
+                <div class="mt-2 ml-5 mr-2" style="width: 60%">
+                  <v-text-field
+                    v-model="wbReturnMaterialDamagePercentInput"
+                    :disabled="useDefaultDamagePercent"
+                    label="Потери материалов при возврате, %"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    variant="solo-filled"
+                    density="compact"
+                    hide-details
+                  />
+                </div>
+              </div>
             </div>
           </v-tabs-window-item>
         </v-tabs-window>
@@ -100,8 +113,8 @@
         <v-btn
           color="primary"
           hide-details
-          :disabled="!canUpload"
-          :loading="isLoading"
+          :disabled="!canProcess"
+          :loading="isProcessing || isActiveUploadInProgress"
           class="small-btn-text"
           @click="onConfirmClick"
         >
@@ -128,7 +141,15 @@ const accrualsUploaderWb = ref()
 const cancellationsUploaderWb = ref()
 const primeUploaderWb = ref()
 const wbReturnMaterialDamagePercent = ref(15)
-const isLoading = ref(false)
+const useDefaultDamagePercent = ref(true)
+const isProcessing = ref(false)
+
+const wbReturnMaterialDamagePercentInput = computed({
+  get: () => wbReturnMaterialDamagePercent.value,
+  set: (value: string | number) => {
+    wbReturnMaterialDamagePercent.value = clampPercent(value)
+  },
+})
 
 const props = defineProps({
   isVisible: Boolean,
@@ -145,6 +166,22 @@ const isAnyBadFileSelected = computed(
     cancellationsUploaderWb.value?.isBadFileSelected ||
     primeUploaderWb.value?.isBadFileSelected,
 )
+
+watch(useDefaultDamagePercent, (newValue) => {
+  if (newValue) {
+    wbReturnMaterialDamagePercent.value = 15
+  }
+})
+
+function clampPercent(value: string | number) {
+  const percent = Number(value)
+
+  if (!Number.isFinite(percent)) {
+    return 0
+  }
+
+  return Math.min(100, Math.max(0, percent))
+}
 
 const canUpload = computed(() => {
   if (activeTab.value === 'ozon1') {
@@ -171,6 +208,41 @@ const canUpload = computed(() => {
   }
 })
 
+const activeRequiredUploaders = computed(() => {
+  if (activeTab.value === 'ozon1') {
+    return [accrualUploader1.value, adsUploader.value, primeUploader1.value]
+  }
+
+  if (activeTab.value === 'ozon2') {
+    return [accrualUploader2.value, primeUploader2.value]
+  }
+
+  return [accrualsUploaderWb.value, primeUploaderWb.value]
+})
+
+const activeOptionalUploaders = computed(() => {
+  if (activeTab.value === 'wb' && cancellationsUploaderWb.value?.hasFile) {
+    return [cancellationsUploaderWb.value]
+  }
+
+  return []
+})
+
+const activeUploaders = computed(() => [
+  ...activeRequiredUploaders.value,
+  ...activeOptionalUploaders.value,
+])
+
+const isActiveUploadInProgress = computed(() =>
+  activeUploaders.value.some((uploader) => uploader?.isUploading),
+)
+
+const areRequiredFilesUploaded = computed(() =>
+  activeRequiredUploaders.value.every((uploader) => uploader?.isUploaded),
+)
+
+const canProcess = computed(() => canUpload.value && areRequiredFilesUploaded.value && !isAnyBadFileSelected.value)
+
 const emit = defineEmits(['confirmed', 'canceled'])
 
 watch(props, (newValue) => {
@@ -181,46 +253,14 @@ watch(props, (newValue) => {
 async function onConfirmClick() {
   if (!canUpload.value) return
 
-  if (activeTab.value == 'ozon1') {
-    try {
-      isLoading.value = true
-      await Promise.all([
-        accrualUploader1.value?.upload(),
-        adsUploader.value?.upload(),
-        primeUploader1.value?.upload(),
-      ])
-      if (isAnyBadFileSelected.value) return
-      emit('confirmed')
-    } finally {
-      isLoading.value = false
-    }
-  }
+  try {
+    isProcessing.value = true
+    await Promise.all(activeUploaders.value.map((uploader) => uploader?.upload()))
 
-  if (activeTab.value == 'ozon2') {
-    try {
-      isLoading.value = true
-      await Promise.all([accrualUploader2.value?.upload(), primeUploader2.value?.upload()])
-      if (isAnyBadFileSelected.value) return
-      emit('confirmed')
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  if (activeTab.value == 'wb') {
-    try {
-      isLoading.value = true
-      const uploads = [accrualsUploaderWb.value?.upload(), primeUploaderWb.value?.upload()]
-      if (cancellationsUploaderWb.value?.hasFile) {
-        uploads.push(cancellationsUploaderWb.value.upload())
-      }
-
-      await Promise.all(uploads)
-      if (isAnyBadFileSelected.value) return
-      emit('confirmed')
-    } finally {
-      isLoading.value = false
-    }
+    if (!areRequiredFilesUploaded.value || isAnyBadFileSelected.value) return
+    emit('confirmed')
+  } finally {
+    isProcessing.value = false
   }
 }
 

@@ -11,6 +11,7 @@
         :error-messages="alertType === 'error' ? shortMessage : ''"
         :hint="alertType === 'success' ? shortMessage : ''"
         :persistent-hint="alertType === 'success'"
+        :loading="isUploading"
       >
         <template #append-inner>
           <v-tooltip v-if="alertType === 'error' && isMessageLong" location="bottom">
@@ -36,6 +37,10 @@ const props = defineProps({
 
 const selectedFile = ref<File | File[] | null>(null)
 const isBadFileSelected = ref(false)
+const isUploaded = ref(false)
+const isUploading = ref(false)
+const uploadPromise = ref<Promise<void> | null>(null)
+const uploadRequestId = ref(0)
 const message = ref('')
 const alertType = ref<'info' | 'success' | 'warning' | 'error'>('info')
 const shortMessage = computed(() => {
@@ -47,8 +52,11 @@ const isMessageLong = computed(() => {
 })
 
 watch(selectedFile, () => {
-  message.value = ''
-  isBadFileSelected.value = false
+  resetUploadState()
+
+  if (getFiles().length) {
+    void upload()
+  }
 })
 
 function getFiles(): File[] {
@@ -59,30 +67,64 @@ function getFiles(): File[] {
 async function upload() {
   const files = getFiles()
   if (!files.length) return
+  if (isUploaded.value && !isBadFileSelected.value) return
+  if (uploadPromise.value) return uploadPromise.value
 
+  const requestId = ++uploadRequestId.value
+  uploadPromise.value = uploadSelectedFiles(files, requestId)
+
+  try {
+    await uploadPromise.value
+  } finally {
+    if (requestId === uploadRequestId.value) {
+      uploadPromise.value = null
+    }
+  }
+}
+
+async function uploadSelectedFiles(files: File[], requestId: number) {
   const formData = new FormData()
   for (const f of files) {
     formData.append('file', f, f.name)
   }
 
-  console.log('selectedFile', selectedFile.value)
-
   try {
+    isUploading.value = true
+    message.value = 'Загрузка файла...'
+    alertType.value = 'info'
     const response = await axios.post(props.endpoint!, formData)
+    if (requestId !== uploadRequestId.value) return
+
     const count = response.data.count
     message.value = `Загружено ${count} строк(и).`
     alertType.value = 'success'
     isBadFileSelected.value = false
+    isUploaded.value = true
   } catch (error: any) {
+    if (requestId !== uploadRequestId.value) return
+
     message.value = `${error?.response?.data || error.message}`
     alertType.value = 'error'
-    isBadFileSelected.value = true // Reset the file input
+    isBadFileSelected.value = true
+    isUploaded.value = false
+  } finally {
+    if (requestId === uploadRequestId.value) {
+      isUploading.value = false
+    }
   }
 }
 
 function resetData() {
   selectedFile.value = null
+  resetUploadState()
+}
+
+function resetUploadState() {
+  uploadRequestId.value++
   isBadFileSelected.value = false
+  isUploaded.value = false
+  isUploading.value = false
+  uploadPromise.value = null
   message.value = ''
   alertType.value = 'info'
 }
@@ -92,6 +134,8 @@ defineExpose({
   resetData,
   hasFile: computed(() => !!selectedFile.value),
   isBadFileSelected: computed(() => isBadFileSelected.value),
+  isUploaded: computed(() => isUploaded.value),
+  isUploading: computed(() => isUploading.value),
 })
 </script>
 <style>
