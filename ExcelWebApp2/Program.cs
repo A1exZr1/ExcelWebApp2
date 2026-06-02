@@ -1,5 +1,6 @@
 using ExcelWebApp2.Repositories;
 using ExcelWebApp2.Repositories.Processing;
+using ExcelWebApp2.Infrastructure;
 
 namespace ExcelWebApp2
 {
@@ -12,30 +13,32 @@ namespace ExcelWebApp2
                 ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 
             builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer(); // Required for Swagger
+            builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddScoped<FileReaderRepository>();
             builder.Services.AddSingleton<IOzonV1Processor, OzonV1Processor>();
             builder.Services.AddSingleton<IOzonV2Processor, OzonV2Processor>();
             builder.Services.AddSingleton<IWildberriesProcessor, WildberriesProcessor>();
             builder.Services.AddSingleton<ProcessorRepository>();
             builder.Services.AddScoped<ExcelExportService>();
-            builder.Services.AddSwaggerGen(options =>
+            builder.Services.AddOpenApiDocument(options =>
             {
-                options.SupportNonNullableReferenceTypes();
+                options.DocumentName = "v1";
+                options.Title = "ExcelWebApp2 API";
             });
 
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
+                app.UseOpenApi();
+                app.UseSwaggerUi(settings =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ExcelWebApp2 v1");
-                    c.RoutePrefix = "swagger";
+                    settings.Path = "/swagger";
+                    settings.DocumentPath = "/swagger/v1/swagger.json";
                 });
             }
 
+            app.UseMiddleware<ApiExceptionMiddleware>();
             app.UseAuthorization();
 
             app.UseDefaultFiles();

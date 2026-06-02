@@ -1,5 +1,14 @@
-import axios from 'axios'
 import type { GridApi, GridOptions, RowClassParams } from 'ag-grid-community'
+import {
+  downloadFile,
+  reportExportClient,
+} from '../../api/fileReaderApi'
+import type {
+  ProcessedOzonResultV1Model,
+  ProcessedOzonResultV2Model,
+  ProcessedWbResultModel,
+} from '../../api/client'
+import { ReportType } from './reportTypes'
 
 export const reportGridOptions: GridOptions = {
   rowClassRules: {
@@ -56,23 +65,35 @@ export function collectDisplayedRows(gridApi: GridApi) {
   return rows
 }
 
-export async function exportRows(endpoint: string, rows: any[], fileSuffix: string) {
+export async function exportRows(reportType: ReportType, rows: any[]) {
   const plainRows = JSON.parse(JSON.stringify(rows))
-  const response = await axios.post(endpoint, plainRows, {
-    responseType: 'blob',
-    headers: { 'Content-Type': 'application/json' },
-  })
+  const fallbackFileName = `processed_results_${reportType}.xlsx`
 
-  const blob = new Blob([response.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  })
+  if (reportType === ReportType.OzonV1) {
+    const response = await reportExportClient.exportProcessedResultsV1(
+      plainRows as ProcessedOzonResultV1Model[],
+    )
+    downloadFile(response, fallbackFileName)
+    return
+  }
 
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `processed_results_${fileSuffix}.xlsx`
-  link.click()
-  URL.revokeObjectURL(url)
+  if (reportType === ReportType.OzonV2) {
+    const response = await reportExportClient.exportProcessedResultsV2(
+      plainRows as ProcessedOzonResultV2Model[],
+    )
+    downloadFile(response, fallbackFileName)
+    return
+  }
+
+  if (reportType === ReportType.Wildberries) {
+    const response = await reportExportClient.exportProcessedResultsWb(
+      plainRows as ProcessedWbResultModel[],
+    )
+    downloadFile(response, fallbackFileName)
+    return
+  }
+
+  throw new Error(`Unknown report type: ${reportType}`)
 }
 
 export function sumRows(rows: any[], selector: (row: any) => number | undefined | null) {

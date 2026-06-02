@@ -11,10 +11,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import axios from 'axios'
 import { AgGridVue } from 'ag-grid-vue3'
 import type { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community'
 import ResultGridOzonV2 from '../ResultGridOzonV2'
+import { reportResultsClient } from '../../api/fileReaderApi'
 import {
   collectDisplayedRows,
   exportRows,
@@ -22,6 +22,7 @@ import {
   reportGridOptions,
   sumRows,
 } from './reportGridShared'
+import { ReportType } from './reportTypes'
 
 const props = defineProps<{
   quickFilterText: string
@@ -66,30 +67,30 @@ function onFilterChanged() {
 
 async function loadData() {
   try {
-    const response = await axios.get('/api/FileReader/GetOzonV2Results')
+    const results = await reportResultsClient.getOzonV2Results()
 
     feeKeys.value = Array.from(
-      new Set((response.data as any[]).flatMap((x) => Object.keys(x.additionalFees ?? {}))),
+      new Set(results.flatMap((x) => Object.keys(x.additionalFees ?? {}))),
     )
     gridApi.value?.setGridOption('columnDefs', buildColumns(feeKeys.value))
 
-    rowData.value = response.data.map(
-      (item: any) =>
+    rowData.value = results.map(
+      (item) =>
         new ResultGridOzonV2(
-          item.articleName,
-          item.sku,
-          item.warehouse,
-          item.preCommissionAmount,
-          item.quantity,
-          item.workCost,
-          item.materialCost,
-          item.unlinkedExpenses,
-          item.ozonFee,
-          item.handlingFee,
-          item.lastMileFee,
-          item.logisticsFee,
-          item.netProfit,
-          item.profitPercent,
+          item.articleName ?? '',
+          item.sku ?? '',
+          item.warehouse ?? '',
+          item.preCommissionAmount ?? 0,
+          item.quantity ?? 0,
+          item.workCost ?? null,
+          item.materialCost ?? null,
+          item.unlinkedExpenses ?? 0,
+          item.ozonFee ?? 0,
+          item.handlingFee ?? 0,
+          item.lastMileFee ?? 0,
+          item.logisticsFee ?? 0,
+          item.netProfit ?? 0,
+          item.profitPercent ?? 0,
           item.additionalFees ?? {},
         ),
     )
@@ -103,7 +104,7 @@ async function loadData() {
 
 async function exportData() {
   if (!gridApi.value) return
-  await exportRows('/api/FileReader/ExportProcessedResultsV2', collectDisplayedRows(gridApi.value), 'ozon2')
+  await exportRows(ReportType.OzonV2, collectDisplayedRows(gridApi.value))
 }
 
 function reset() {

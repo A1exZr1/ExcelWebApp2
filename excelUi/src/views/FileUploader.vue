@@ -28,12 +28,18 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import axios from 'axios'
+import {
+  getApiErrorMessage,
+  reportFilesClient,
+  toFileParameter,
+} from '../api/fileReaderApi'
+import type { UploadFileResponse } from '../api/client'
+import { FileUploadType } from './reports/reportTypes'
 
-const props = defineProps({
-  label: String,
-  endpoint: String,
-})
+const props = defineProps<{
+  label?: string
+  uploadType: FileUploadType
+}>()
 
 const selectedFile = ref<File | File[] | null>(null)
 const isBadFileSelected = ref(false)
@@ -83,27 +89,22 @@ async function upload() {
 }
 
 async function uploadSelectedFiles(files: File[], requestId: number) {
-  const formData = new FormData()
-  for (const f of files) {
-    formData.append('file', f, f.name)
-  }
-
   try {
     isUploading.value = true
     message.value = 'Загрузка файла...'
     alertType.value = 'info'
-    const response = await axios.post(props.endpoint!, formData)
+    const response = await uploadByType(props.uploadType, files)
     if (requestId !== uploadRequestId.value) return
 
-    const count = response.data.count
+    const count = response.count
     message.value = `Загружено ${count} строк(и).`
     alertType.value = 'success'
     isBadFileSelected.value = false
     isUploaded.value = true
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (requestId !== uploadRequestId.value) return
 
-    message.value = `${error?.response?.data || error.message}`
+    message.value = getApiErrorMessage(error)
     alertType.value = 'error'
     isBadFileSelected.value = true
     isUploaded.value = false
@@ -111,6 +112,31 @@ async function uploadSelectedFiles(files: File[], requestId: number) {
     if (requestId === uploadRequestId.value) {
       isUploading.value = false
     }
+  }
+}
+
+function uploadByType(uploadType: FileUploadType, files: File[]): Promise<UploadFileResponse> {
+  const firstFile = files[0] ? toFileParameter(files[0]) : undefined
+
+  switch (uploadType) {
+    case FileUploadType.OzonV1Accrual:
+      return reportFilesClient.readAccrualV1(firstFile)
+    case FileUploadType.OzonV1Advertisement:
+      return reportFilesClient.readAdvertisment(firstFile)
+    case FileUploadType.OzonV1PrimeCost:
+      return reportFilesClient.readPrimeCostModel(firstFile)
+    case FileUploadType.OzonV2Accrual:
+      return reportFilesClient.readAccrualV2(firstFile)
+    case FileUploadType.OzonV2PrimeCost:
+      return reportFilesClient.readPrimeCostModel(firstFile)
+    case FileUploadType.WildberriesAccruals:
+      return reportFilesClient.readAccrualsWb(files.map(toFileParameter))
+    case FileUploadType.WildberriesPrimeCost:
+      return reportFilesClient.primeCostModelWb(firstFile)
+    case FileUploadType.WildberriesCancellations:
+      return reportFilesClient.readWbCancellations(firstFile)
+    default:
+      throw new Error(`Unknown upload type: ${uploadType}`)
   }
 }
 

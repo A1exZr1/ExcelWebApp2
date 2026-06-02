@@ -11,10 +11,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import axios from 'axios'
 import { AgGridVue } from 'ag-grid-vue3'
 import type { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community'
 import ResultGridWB from '../ResultGridWB'
+import { reportResultsClient } from '../../api/fileReaderApi'
 import {
   collectDisplayedRows,
   exportRows,
@@ -22,6 +22,7 @@ import {
   reportGridOptions,
   sumRows,
 } from './reportGridShared'
+import { ReportType } from './reportTypes'
 
 const props = defineProps<{
   quickFilterText: string
@@ -66,35 +67,31 @@ function onFilterChanged() {
 
 async function loadData() {
   try {
-    const response = await axios.get('/api/FileReader/GetWbResults', {
-      params: {
-        returnMaterialDamagePercent: props.returnMaterialDamagePercent ?? 15,
-      },
-    })
-    rowData.value = response.data.map(
-      (item: any) =>
+    const results = await reportResultsClient.getWbResults(props.returnMaterialDamagePercent ?? 15)
+    rowData.value = results.map(
+      (item) =>
         new ResultGridWB(
-          item.articleName,
-          item.sku,
-          item.supplierArticleName,
-          item.brand,
-          item.quantity,
-          item.retailPriceSumm,
-          item.amountPayableToSellerSumm,
-          item.logisticsFee,
-          item.cancelledQuantity,
-          item.cancelledSumm,
-          item.paidAcceptanceSumm,
-          item.totalAmountOfFines,
-          item.returnedQuantity,
-          item.returnedSumm,
-          item.advertisingCost,
-          item.reviewPointsCost,
-          item.cancellationWorkCost,
-          item.workCost,
-          item.materialCost,
-          item.netProfit,
-          item.profitPercent,
+          item.articleName ?? '',
+          item.sku ?? '',
+          item.supplierArticleName ?? '',
+          item.brand ?? '',
+          item.quantity ?? 0,
+          item.retailPriceSumm ?? 0,
+          item.amountPayableToSellerSumm ?? 0,
+          item.logisticsFee ?? 0,
+          item.cancelledQuantity ?? 0,
+          item.cancelledSumm ?? 0,
+          item.paidAcceptanceSumm ?? 0,
+          item.totalAmountOfFines ?? 0,
+          item.returnedQuantity ?? 0,
+          item.returnedSumm ?? 0,
+          item.advertisingCost ?? 0,
+          item.reviewPointsCost ?? 0,
+          item.cancellationWorkCost ?? 0,
+          item.workCost ?? null,
+          item.materialCost ?? null,
+          item.netProfit ?? 0,
+          item.profitPercent ?? 0,
         ),
     )
     gridApi.value?.setGridOption('rowData', rowData.value)
@@ -107,7 +104,7 @@ async function loadData() {
 
 async function exportData() {
   if (!gridApi.value) return
-  await exportRows('/api/FileReader/ExportProcessedResultsWb', collectDisplayedRows(gridApi.value), 'wb')
+  await exportRows(ReportType.Wildberries, collectDisplayedRows(gridApi.value))
 }
 
 function reset() {

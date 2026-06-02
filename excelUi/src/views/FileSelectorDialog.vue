@@ -3,9 +3,9 @@
     <v-card style="height: 100vh; display: flex; flex-direction: column">
       <v-container height="370">
         <v-tabs v-model="activeTab" align-tabs="center" color="primary">
-          <v-tab value="ozon1" text="Ozon V1" style="min-width: 120px; height: 50px" />
-          <v-tab value="ozon2" text="Ozon V2" style="min-width: 120px; height: 50px" />
-          <v-tab value="wb" text="Wildberries" style="min-width: 120px; height: 50px" />
+          <v-tab :value="ReportType.OzonV1" text="Ozon V1" style="min-width: 120px; height: 50px" />
+          <v-tab :value="ReportType.OzonV2" text="Ozon V2" style="min-width: 120px; height: 50px" />
+          <v-tab :value="ReportType.Wildberries" text="Wildberries" style="min-width: 120px; height: 50px" />
         </v-tabs>
 
         <v-tabs-window
@@ -13,7 +13,7 @@
           style="height: 95%; width: 100%"
           v-model="activeTab"
         >
-          <v-tabs-window-item value="ozon1" style="height: 100%">
+          <v-tabs-window-item :value="ReportType.OzonV1" style="height: 100%">
             <div
               class="d-flex flex-column pa-2"
               style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
@@ -21,23 +21,23 @@
               <FileUploader
                 class="pb-2"
                 label="файл начислений"
-                endpoint="/api/FileReader/ReadAccrualV1"
+                :upload-type="FileUploadType.OzonV1Accrual"
                 ref="accrualUploader1"
               />
               <FileUploader
                 class="pb-2"
                 label="файл рекламы"
-                endpoint="/api/FileReader/ReadAdvertisment"
+                :upload-type="FileUploadType.OzonV1Advertisement"
                 ref="adsUploader"
               />
               <FileUploader
                 label="файл себестоимости"
-                endpoint="/api/FileReader/PrimeCostModel"
+                :upload-type="FileUploadType.OzonV1PrimeCost"
                 ref="primeUploader1"
               />
             </div>
           </v-tabs-window-item>
-          <v-tabs-window-item style="height: 100%" value="ozon2">
+          <v-tabs-window-item style="height: 100%" :value="ReportType.OzonV2">
             <div
               class="d-flex flex-column pa-2"
               style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
@@ -45,17 +45,17 @@
               <FileUploader
                 class="pb-2"
                 label="файл отчёта по товарам"
-                endpoint="/api/FileReader/ReadAccrualV2"
+                :upload-type="FileUploadType.OzonV2Accrual"
                 ref="accrualUploader2"
               />
               <FileUploader
                 label="файл себестоимости"
-                endpoint="/api/FileReader/PrimeCostModel"
+                :upload-type="FileUploadType.OzonV2PrimeCost"
                 ref="primeUploader2"
               />
             </div>
           </v-tabs-window-item>
-          <v-tabs-window-item style="height: 100%" value="wb">
+          <v-tabs-window-item style="height: 100%" :value="ReportType.Wildberries">
             <div
               class="flex-column pa-2"
               style="width: 100%; height: 100%; overflow-y: auto; justify-content: center;  align-items: center;"
@@ -65,19 +65,19 @@
                 label="файлы отчётов"
                 chips
                 multiple
-                endpoint="/api/FileReader/ReadAccrualsWb"
+                :upload-type="FileUploadType.WildberriesAccruals"
                 ref="accrualsUploaderWb"
               />
               <FileUploader
                 class="pb-2"
                 label="файл себестоимости"
-                endpoint="/api/FileReader/PrimeCostModelWb"
+                :upload-type="FileUploadType.WildberriesPrimeCost"
                 ref="primeUploaderWb"
               />
               <FileUploader
                 class="pb-2"
                 label="файл отмен"
-                endpoint="/api/FileReader/ReadWbCancellations"
+                :upload-type="FileUploadType.WildberriesCancellations"
                 ref="cancellationsUploaderWb"
               />
               <div class="d-flex ">
@@ -130,8 +130,9 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import FileUploader from './FileUploader.vue'
+import { FileUploadType, ReportType } from './reports/reportTypes'
 
-const activeTab = ref<string>('ozon1')
+const activeTab = ref<ReportType>(ReportType.OzonV1)
 const accrualUploader1 = ref()
 const accrualUploader2 = ref()
 const adsUploader = ref()
@@ -184,14 +185,14 @@ function clampPercent(value: string | number) {
 }
 
 const canUpload = computed(() => {
-  if (activeTab.value === 'ozon1') {
+  if (activeTab.value === ReportType.OzonV1) {
     return (
       accrualUploader1.value?.hasFile &&
       adsUploader.value?.hasFile &&
       primeUploader1.value?.hasFile &&
       !isAnyBadFileSelected.value
     )
-  } else if (activeTab.value === 'ozon2') {
+  } else if (activeTab.value === ReportType.OzonV2) {
     return (
       accrualUploader2.value?.hasFile &&
       primeUploader2.value?.hasFile &&
@@ -209,11 +210,11 @@ const canUpload = computed(() => {
 })
 
 const activeRequiredUploaders = computed(() => {
-  if (activeTab.value === 'ozon1') {
+  if (activeTab.value === ReportType.OzonV1) {
     return [accrualUploader1.value, adsUploader.value, primeUploader1.value]
   }
 
-  if (activeTab.value === 'ozon2') {
+  if (activeTab.value === ReportType.OzonV2) {
     return [accrualUploader2.value, primeUploader2.value]
   }
 
@@ -221,7 +222,7 @@ const activeRequiredUploaders = computed(() => {
 })
 
 const activeOptionalUploaders = computed(() => {
-  if (activeTab.value === 'wb' && cancellationsUploaderWb.value?.hasFile) {
+  if (activeTab.value === ReportType.Wildberries && cancellationsUploaderWb.value?.hasFile) {
     return [cancellationsUploaderWb.value]
   }
 

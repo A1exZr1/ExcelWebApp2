@@ -11,10 +11,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import axios from 'axios'
 import { AgGridVue } from 'ag-grid-vue3'
 import type { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community'
 import ResultGridOzonV1 from '../ResultGridOzonV1'
+import { reportResultsClient } from '../../api/fileReaderApi'
 import {
   collectDisplayedRows,
   exportRows,
@@ -22,6 +22,7 @@ import {
   reportGridOptions,
   sumRows,
 } from './reportGridShared'
+import { ReportType } from './reportTypes'
 
 const props = defineProps<{
   quickFilterText: string
@@ -65,21 +66,21 @@ function onFilterChanged() {
 
 async function loadData() {
   try {
-    const response = await axios.get('/api/FileReader/GetOzonV1Results')
-    rowData.value = response.data.map(
-      (item: any) =>
+    const results = await reportResultsClient.getOzonV1Results()
+    rowData.value = results.map(
+      (item) =>
         new ResultGridOzonV1(
-          item.articleName,
-          item.sku,
-          item.quantity,
-          item.totalSumm,
-          item.revenue,
-          item.advertisingCost,
-          item.workCost,
-          item.materialCost,
-          item.unlinkedExpenses,
-          item.netProfit,
-          item.profitPercent,
+          item.articleName ?? '',
+          item.sku ?? '',
+          item.quantity ?? 0,
+          item.totalSumm ?? 0,
+          item.revenue ?? 0,
+          item.advertisingCost ?? 0,
+          item.workCost ?? null,
+          item.materialCost ?? null,
+          item.unlinkedExpenses ?? 0,
+          item.netProfit ?? 0,
+          item.profitPercent ?? 0,
         ),
     )
     gridApi.value?.setGridOption('rowData', rowData.value)
@@ -92,7 +93,7 @@ async function loadData() {
 
 async function exportData() {
   if (!gridApi.value) return
-  await exportRows('/api/FileReader/ExportProcessedResultsV1', collectDisplayedRows(gridApi.value), 'ozon1')
+  await exportRows(ReportType.OzonV1, collectDisplayedRows(gridApi.value))
 }
 
 function reset() {

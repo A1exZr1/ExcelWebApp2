@@ -1,0 +1,32 @@
+{
+  "runtime": "Net80",
+  "documentGenerator": {
+    "aspNetCoreToOpenApi": {
+      "project": "../ExcelWebApp2/ExcelWebApp2.csproj",
+      "configuration": "Debug",
+      "targetFramework": "net10.0",
+      "noBuild": false,
+      "documentName": "v1",
+      "aspNetCoreEnvironment": "Development",
+      "output": null
+    }
+  },
+  "codeGenerators": {
+    "openApiToTypeScriptClient": {
+      "className": "{controller}Client",
+      "template": "Fetch",
+      "typeScriptVersion": 5.8,
+      "typeStyle": "Interface",
+      "dateTimeType": "string",
+      "nullValue": "Undefined",
+      "generateClientClasses": true,
+      "generateClientInterfaces": false,
+      "generateDtoTypes": true,
+      "generateOptionalParameters": true,
+      "operationGenerationMode": "MultipleClientsFromOperationId",
+      "markOptionalProperties": true,
+      "exportTypes": true,
+      "output": "src/api/client.ts"
+    }
+  }
+}

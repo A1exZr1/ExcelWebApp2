@@ -30,7 +30,6 @@ export default defineConfig({
           vue: ['vue'],
           vuetify: ['vuetify'],
           'ag-grid': ['ag-grid-community', 'ag-grid-vue3'],
-          axios: ['axios'],
         },
       },
     },

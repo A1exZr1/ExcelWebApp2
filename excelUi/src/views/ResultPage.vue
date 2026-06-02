@@ -69,12 +69,12 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import axios from 'axios'
 import FileSelectorDialog from './FileSelectorDialog.vue'
 import OzonV1Report from './reports/OzonV1Report.vue'
 import OzonV2Report from './reports/OzonV2Report.vue'
 import WildberriesReport from './reports/WildberriesReport.vue'
-import type { ReportComponentExpose, ReportType } from './reports/reportTypes'
+import { ReportType, type ReportComponentExpose } from './reports/reportTypes'
+import { reportResultsClient } from '../api/fileReaderApi'
 
 const searchQuickFilterText = ref('')
 const isLoading = ref(false)
@@ -86,9 +86,9 @@ const fileSelectorDialog = ref<{ activeTab: ReportType; wbReturnMaterialDamagePe
 const wbReturnMaterialDamagePercent = ref(15)
 
 const reportComponents = {
-  ozon1: OzonV1Report,
-  ozon2: OzonV2Report,
-  wb: WildberriesReport,
+  [ReportType.OzonV1]: OzonV1Report,
+  [ReportType.OzonV2]: OzonV2Report,
+  [ReportType.Wildberries]: WildberriesReport,
 } as const
 
 const activeReportComponent = computed(() =>
@@ -153,7 +153,7 @@ async function resetData() {
 
 async function resetBackendData() {
   try {
-    await axios.post('/api/FileReader/Reset')
+    await reportResultsClient.reset()
   } catch (err) {
     console.error(err)
     alert('Ошибка при сбросе данных')
