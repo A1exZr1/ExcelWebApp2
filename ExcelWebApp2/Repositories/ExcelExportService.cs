@@ -188,6 +188,7 @@ namespace ExcelWebApp2.Repositories
             ws.Cell(1, col++).Value = "Штрафы";
             ws.Cell(1, col++).Value = "Количество возвратов";
             ws.Cell(1, col++).Value = "Возвраты";
+            ws.Cell(1, col++).Value = "Расходы работы при возвратах";
             ws.Cell(1, col++).Value = "15% стоимости материалов при возвратах";
             ws.Cell(1, col++).Value = "Реклама";
             ws.Cell(1, col++).Value = "Отзывы за баллы";
@@ -240,6 +241,7 @@ namespace ExcelWebApp2.Repositories
                 ws.Cell(row, col).Value = item.TotalAmountOfFines; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReturnedQuantity; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReturnedSumm; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, col).Value = item.ReturnWorkCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReturnMaterialDamageCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.AdvertisingCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";
                 ws.Cell(row, col).Value = item.ReviewPointsCost; ws.Cell(row, col++).Style.NumberFormat.Format = "#,##0.00";

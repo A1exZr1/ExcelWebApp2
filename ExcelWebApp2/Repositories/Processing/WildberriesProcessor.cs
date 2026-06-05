@@ -164,6 +164,7 @@ namespace ExcelWebApp2.Repositories.Processing
                             TotalAmountOfFines = payableFinesSumm,
                             ReturnedSumm = returnSumm,
                             ReturnedQuantity = returnQuantity,
+                            ReturnWorkCost = returnWorkCost,
                             ReturnMaterialDamageCost = returnMaterialDamageCost,
                             WorkCost = workCost is null ? null : allWorkCost,
                             MaterialCost = materialCost is null ? null : allMaterialCost,

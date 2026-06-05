@@ -18,6 +18,7 @@
         public decimal TotalAmountOfFines { get; set; }
         public int ReturnedQuantity { get; set; }
         public decimal ReturnedSumm { get; set; }
+        public decimal ReturnWorkCost { get; set; }
         public decimal ReturnMaterialDamageCost { get; set; }
         public decimal AdvertisingCost { get; set; }
         public decimal ReviewPointsCost { get; set; }

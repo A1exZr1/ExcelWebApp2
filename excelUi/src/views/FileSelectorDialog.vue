@@ -93,7 +93,7 @@
                   <v-text-field
                     v-model="wbReturnMaterialDamagePercentInput"
                     :disabled="useDefaultDamagePercent"
-                    label="Потери материалов при возврате, %"
+                    label="Потери материалов при возврате/отмене, %"
                     type="number"
                     min="0"
                     max="100"

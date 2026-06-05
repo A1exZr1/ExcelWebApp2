@@ -85,6 +85,7 @@ async function loadData() {
           item.totalAmountOfFines ?? 0,
           item.returnedQuantity ?? 0,
           item.returnedSumm ?? 0,
+          item.returnWorkCost ?? 0,
           item.returnMaterialDamageCost ?? 0,
           item.advertisingCost ?? 0,
           item.reviewPointsCost ?? 0,
@@ -136,6 +137,7 @@ function updatePinnedTotals() {
   totals.totalAmountOfFines = sumRows(rows, (r) => r.totalAmountOfFines)
   totals.returnedQuantity = sumRows(rows, (r) => r.returnedQuantity)
   totals.returnedSumm = sumRows(rows, (r) => r.returnedSumm)
+  totals.returnWorkCost = sumRows(rows, (r) => r.returnWorkCost)
   totals.returnMaterialDamageCost = sumRows(rows, (r) => r.returnMaterialDamageCost)
   totals.advertisingCost = sumRows(rows, (r) => r.advertisingCost)
   totals.reviewPointsCost = sumRows(rows, (r) => r.reviewPointsCost)
@@ -238,6 +240,13 @@ function buildColumns() {
       field: 'returnedSumm',
       headerName: 'Возвраты',
       minWidth: 100,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params: any) => params.value?.toFixed(2),
+    },
+    {
+      field: 'returnWorkCost',
+      headerName: 'Расходы работы при возвратах',
+      minWidth: 170,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params: any) => params.value?.toFixed(2),
     },

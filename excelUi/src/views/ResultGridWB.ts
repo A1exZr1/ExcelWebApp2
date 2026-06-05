@@ -15,6 +15,7 @@ export default class ResultGridWB {
     public totalAmountOfFines: number,
     public returnedQuantity: number,
     public returnedSumm: number,
+    public returnWorkCost: number,
     public returnMaterialDamageCost: number,
     public advertisingCost: number,
     public reviewPointsCost: number,

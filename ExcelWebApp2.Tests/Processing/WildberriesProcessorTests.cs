@@ -77,13 +77,13 @@ public class WildberriesProcessorTests
             {
                 SupplierArticleName = "ART-1",
                 Sku = "123",
-                Status = "Отсортировано"
+                Status = "Отказ покупателем"
             },
             new()
             {
                 SupplierArticleName = "ART-1",
                 Sku = "123",
-                Status = "Отсортировано"
+                Status = "Отказ покупателем"
             },
             new()
             {
@@ -95,13 +95,13 @@ public class WildberriesProcessorTests
             {
                 SupplierArticleName = "ART-ONLY-CANCEL",
                 Sku = "999",
-                Status = "Отсортировано"
+                Status = "Отказ покупателем"
             },
             new()
             {
                 SupplierArticleName = "ART-NO-PRIME",
                 Sku = "777",
-                Status = "Отсортировано"
+                Status = "Отказ покупателем"
             }
         };
 
@@ -121,6 +121,7 @@ public class WildberriesProcessorTests
         Assert.Equal(1, product.ReturnedQuantity);
         Assert.Equal(100m, product.WorkCost);
         Assert.Equal(200m, product.MaterialCost);
+        Assert.Equal(50m, product.ReturnWorkCost);
         Assert.Equal(15m, product.ReturnMaterialDamageCost);
         Assert.Equal(2, product.CancellationWorkQuantity);
         Assert.Equal(100m, product.CancellationWorkCost);
@@ -137,6 +138,7 @@ public class WildberriesProcessorTests
         Assert.Equal(12m, cancellationOnly.CancellationMaterialDamageCost);
         Assert.Equal(0m, cancellationOnly.WorkCost);
         Assert.Equal(0m, cancellationOnly.MaterialCost);
+        Assert.Equal(0m, cancellationOnly.ReturnWorkCost);
         Assert.Equal(-52m, cancellationOnly.NetProfit);
         Assert.Null(cancellationOnly.ProfitPercent);
 
@@ -148,6 +150,7 @@ public class WildberriesProcessorTests
         Assert.Equal(0m, missingPrimeCost.CancellationMaterialDamageCost);
         Assert.Null(missingPrimeCost.WorkCost);
         Assert.Null(missingPrimeCost.MaterialCost);
+        Assert.Equal(0m, missingPrimeCost.ReturnWorkCost);
         Assert.Equal(0m, missingPrimeCost.NetProfit);
         Assert.Null(missingPrimeCost.ProfitPercent);
 

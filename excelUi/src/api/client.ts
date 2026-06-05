@@ -615,6 +615,7 @@ export interface ProcessedWbResultModel {
     totalAmountOfFines?: number;
     returnedQuantity?: number;
     returnedSumm?: number;
+    returnWorkCost?: number;
     returnMaterialDamageCost?: number;
     advertisingCost?: number;
     reviewPointsCost?: number;
