@@ -85,13 +85,16 @@ async function loadData() {
           item.totalAmountOfFines ?? 0,
           item.returnedQuantity ?? 0,
           item.returnedSumm ?? 0,
+          item.returnMaterialDamageCost ?? 0,
           item.advertisingCost ?? 0,
           item.reviewPointsCost ?? 0,
+          item.cancellationWorkQuantity ?? 0,
           item.cancellationWorkCost ?? 0,
+          item.cancellationMaterialDamageCost ?? 0,
           item.workCost ?? null,
           item.materialCost ?? null,
           item.netProfit ?? 0,
-          item.profitPercent ?? 0,
+          item.profitPercent ?? null,
         ),
     )
     gridApi.value?.setGridOption('rowData', rowData.value)
@@ -133,9 +136,12 @@ function updatePinnedTotals() {
   totals.totalAmountOfFines = sumRows(rows, (r) => r.totalAmountOfFines)
   totals.returnedQuantity = sumRows(rows, (r) => r.returnedQuantity)
   totals.returnedSumm = sumRows(rows, (r) => r.returnedSumm)
+  totals.returnMaterialDamageCost = sumRows(rows, (r) => r.returnMaterialDamageCost)
   totals.advertisingCost = sumRows(rows, (r) => r.advertisingCost)
   totals.reviewPointsCost = sumRows(rows, (r) => r.reviewPointsCost)
+  totals.cancellationWorkQuantity = sumRows(rows, (r) => r.cancellationWorkQuantity)
   totals.cancellationWorkCost = sumRows(rows, (r) => r.cancellationWorkCost)
+  totals.cancellationMaterialDamageCost = sumRows(rows, (r) => r.cancellationMaterialDamageCost)
   totals.workCost = sumRows(rows, (r) => r.workCost)
   totals.materialCost = sumRows(rows, (r) => r.materialCost)
   totals.netProfit = sumRows(rows, (r) => r.netProfit)
@@ -236,6 +242,13 @@ function buildColumns() {
       valueFormatter: (params: any) => params.value?.toFixed(2),
     },
     {
+      field: 'returnMaterialDamageCost',
+      headerName: '15% материалов при возвратах',
+      minWidth: 180,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params: any) => params.value?.toFixed(2),
+    },
+    {
       field: 'advertisingCost',
       headerName: 'Реклама',
       minWidth: 100,
@@ -250,9 +263,23 @@ function buildColumns() {
       valueFormatter: (params: any) => params.value?.toFixed(2),
     },
     {
+      field: 'cancellationWorkQuantity',
+      headerName: 'Количество работ при отменах',
+      minWidth: 160,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params: any) => params.value?.toFixed(2),
+    },
+    {
       field: 'cancellationWorkCost',
       headerName: 'Расходы работы при отмене',
       minWidth: 160,
+      filter: 'agNumberColumnFilter',
+      valueFormatter: (params: any) => params.value?.toFixed(2),
+    },
+    {
+      field: 'cancellationMaterialDamageCost',
+      headerName: '15% материалов при отменах',
+      minWidth: 180,
       filter: 'agNumberColumnFilter',
       valueFormatter: (params: any) => params.value?.toFixed(2),
     },

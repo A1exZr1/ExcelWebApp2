@@ -90,7 +90,7 @@ async function loadData() {
           item.lastMileFee ?? 0,
           item.logisticsFee ?? 0,
           item.netProfit ?? 0,
-          item.profitPercent ?? 0,
+          item.profitPercent ?? null,
           item.additionalFees ?? {},
         ),
     )

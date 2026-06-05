@@ -615,9 +615,12 @@ export interface ProcessedWbResultModel {
     totalAmountOfFines?: number;
     returnedQuantity?: number;
     returnedSumm?: number;
+    returnMaterialDamageCost?: number;
     advertisingCost?: number;
     reviewPointsCost?: number;
+    cancellationWorkQuantity?: number;
     cancellationWorkCost?: number;
+    cancellationMaterialDamageCost?: number;
     workCost?: number | undefined;
     materialCost?: number | undefined;
     netProfit?: number;

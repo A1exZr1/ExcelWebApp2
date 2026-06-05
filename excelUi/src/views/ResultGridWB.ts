@@ -15,12 +15,15 @@ export default class ResultGridWB {
     public totalAmountOfFines: number,
     public returnedQuantity: number,
     public returnedSumm: number,
+    public returnMaterialDamageCost: number,
     public advertisingCost: number,
     public reviewPointsCost: number,
+    public cancellationWorkQuantity: number,
     public cancellationWorkCost: number,
+    public cancellationMaterialDamageCost: number,
     public workCost: number | null,
     public materialCost: number | null,
     public netProfit: number,
-    public profitPercent: number,
+    public profitPercent: number | null,
   ) {}
 }

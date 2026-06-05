@@ -10,6 +10,6 @@ export default class ResultGridOzonV1 {
     public materialCost: number | null,
     public unlinkedExpenses: number,
     public netProfit: number,
-    public profitPercent: number,
+    public profitPercent: number | null,
   ) {}
 }

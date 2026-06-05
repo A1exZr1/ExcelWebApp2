@@ -8,9 +8,9 @@ namespace ExcelWebApp2.Repositories.Processing
             IReadOnlyCollection<AccrualRecordWbModel> accruals,
             IReadOnlyCollection<PrimeCostWbModel> primeCosts,
             IReadOnlyCollection<WbCancellationModel> cancellations,
-            decimal returnMaterialDamagePercent)
+            decimal returnCancellationMaterialDamagePercent)
         {
-            returnMaterialDamagePercent = Math.Clamp(returnMaterialDamagePercent, 0, 100);
+            returnCancellationMaterialDamagePercent = Math.Clamp(returnCancellationMaterialDamagePercent, 0, 100);
 
             var primeBySku = primeCosts
                 .Where(x => !string.IsNullOrWhiteSpace(x.Sku))
@@ -33,10 +33,14 @@ namespace ExcelWebApp2.Repositories.Processing
                 return string.Empty;
             }
 
-            var sortedCancellationCounts = cancellations
-                .Where(x => x.Status.Equals("Отсортировано", StringComparison.OrdinalIgnoreCase))
-                .GroupBy(x => CreateCancellationKey(x.SupplierArticleName, x.Sku))
-                .ToDictionary(g => g.Key, g => g.Count());
+            var cancellationsInfoGroups = cancellations
+                .Where(x => x.Status.Equals("Отказ покупателем", StringComparison.OrdinalIgnoreCase)
+                    && (!string.IsNullOrWhiteSpace(x.SupplierArticleName) || !string.IsNullOrWhiteSpace(x.Sku)))
+                .GroupBy(x => new { x.SupplierArticleName, x.Sku })
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var cancellationsInfoCounts = cancellationsInfoGroups
+                .ToDictionary(g => g.Key, g => g.Value.Count);
 
             var fullRetailPriceSumm = accruals
                 .Where(x => x.DocumentType.Equals("Продажа", StringComparison.OrdinalIgnoreCase) && x.PaymentReason.Equals("Продажа", StringComparison.OrdinalIgnoreCase))
@@ -61,15 +65,25 @@ namespace ExcelWebApp2.Repositories.Processing
                     && !string.IsNullOrEmpty(w.Withholdings))
                 .Sum(w => GetParsedDecimal(w.Withholdings, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Withholdings))));
 
-            var result = accruals
+            var accrualGroups = accruals
                 .Where(x => !string.IsNullOrEmpty(x.SupplierArticleName))
                 .GroupBy(x => new { x.SupplierArticleName, x.Sku })
-                .Select(group =>
+                .ToDictionary( g => g.Key, g => g.ToList());
+
+            var result = accrualGroups.Keys
+                .Union(cancellationsInfoGroups.Keys)
+                .Select(key =>
                 {
-                    var supplierArticleName = group.Key.SupplierArticleName;
-                    var sku = group.Key.Sku;
-                    var articleName = group.FirstOrDefault()?.ArticleName ?? string.Empty;
+                    accrualGroups.TryGetValue(key, out var group);
+                    group ??= [];
+                    cancellationsInfoGroups.TryGetValue(key, out var cancellationGroup);
+                    cancellationGroup ??= [];
+
+                    var supplierArticleName = key.SupplierArticleName;
+                    var sku = key.Sku;
+                    var articleName = group.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.ArticleName))?.ArticleName ?? string.Empty;
                     var brand = GetBrand(supplierArticleName, sku);
+                    var cancellationCount = cancellationsInfoCounts.TryGetValue(key, out int value) ? value : 0;
 
                     try
                     {
@@ -127,11 +141,12 @@ namespace ExcelWebApp2.Repositories.Processing
                         var allWorkCost = (workCost ?? 0) * quantity;
                         var allMaterialCost = (materialCost ?? 0) * quantity;
                         var returnWorkCost = returnQuantity * (workCost ?? 0);
-                        var returnMaterialDamageCost = Math.Round(returnQuantity * (materialCost ?? 0) * returnMaterialDamagePercent / 100, 3);
-                        var cancellationWorkCost = GetCancellationCount(sortedCancellationCounts, supplierArticleName, sku) * (workCost ?? 0);
+                        var returnMaterialDamageCost = Math.Round(returnQuantity * (materialCost ?? 0) * returnCancellationMaterialDamagePercent / 100, 3);
+                        var cancellationMaterialDamageCost = Math.Round(cancellationCount * (materialCost ?? 0) * returnCancellationMaterialDamagePercent / 100, 3);
+                        var cancellationWorkCost = cancellationCount * (workCost ?? 0);
 
                         var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
-                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)) - returnWorkCost - returnMaterialDamageCost - cancellationWorkCost, 3);
+                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)) - returnWorkCost - returnMaterialDamageCost - cancellationWorkCost - cancellationMaterialDamageCost, 3);
 
                         return new ProcessedWbResultModel
                         {
@@ -149,11 +164,14 @@ namespace ExcelWebApp2.Repositories.Processing
                             TotalAmountOfFines = payableFinesSumm,
                             ReturnedSumm = returnSumm,
                             ReturnedQuantity = returnQuantity,
+                            ReturnMaterialDamageCost = returnMaterialDamageCost,
                             WorkCost = workCost is null ? null : allWorkCost,
                             MaterialCost = materialCost is null ? null : allMaterialCost,
                             AdvertisingCost = proportionalAdvertisingCost ?? 0,
                             ReviewPointsCost = proportionalreviewPointsCost ?? 0,
+                            CancellationWorkQuantity = cancellationCount,
                             CancellationWorkCost = cancellationWorkCost,
+                            CancellationMaterialDamageCost = cancellationMaterialDamageCost,
                             NetProfit = netProfit,
                             ProfitPercent = amountPayableToSellerSumm != 0 ? Math.Round((netProfit / Math.Abs(amountPayableToSellerSumm)) * 100, 2) : null
                         };
@@ -199,24 +217,6 @@ namespace ExcelWebApp2.Repositories.Processing
             MaterialCost = 0,
             ProfitPercent = 0
         });
-
-        private static int GetCancellationCount(
-            IReadOnlyDictionary<CancellationKey, int> cancellationCounts,
-            string supplierArticleName,
-            string sku)
-        {
-            var key = CreateCancellationKey(supplierArticleName, sku);
-            return cancellationCounts.TryGetValue(key, out var count) ? count : 0;
-        }
-
-        private static CancellationKey CreateCancellationKey(string supplierArticleName, string sku)
-        {
-            return new CancellationKey(
-                supplierArticleName.Trim().ToUpperInvariant(),
-                sku.Trim().ToUpperInvariant());
-        }
-
-        private readonly record struct CancellationKey(string SupplierArticleName, string Sku);
 
         private static bool IsReviewBrand(string brand)
         {

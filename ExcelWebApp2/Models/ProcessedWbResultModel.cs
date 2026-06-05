@@ -18,9 +18,12 @@
         public decimal TotalAmountOfFines { get; set; }
         public int ReturnedQuantity { get; set; }
         public decimal ReturnedSumm { get; set; }
+        public decimal ReturnMaterialDamageCost { get; set; }
         public decimal AdvertisingCost { get; set; }
         public decimal ReviewPointsCost { get; set; }
+        public int CancellationWorkQuantity { get; set; }
         public decimal CancellationWorkCost { get; set; }
+        public decimal CancellationMaterialDamageCost { get; set; }
 
         public decimal? WorkCost { get; set; }
         public decimal? MaterialCost { get; set; }

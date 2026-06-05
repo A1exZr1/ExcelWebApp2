@@ -80,7 +80,7 @@ async function loadData() {
           item.materialCost ?? null,
           item.unlinkedExpenses ?? 0,
           item.netProfit ?? 0,
-          item.profitPercent ?? 0,
+          item.profitPercent ?? null,
         ),
     )
     gridApi.value?.setGridOption('rowData', rowData.value)
