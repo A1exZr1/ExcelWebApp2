@@ -54,7 +54,8 @@ namespace ExcelWebApp2.Repositories.Processing
             var fullAdvertisingCost = accruals
                 .Where(w => string.IsNullOrEmpty(w.DocumentType)
                     && w.PaymentReason.Equals("удержание", StringComparison.CurrentCultureIgnoreCase)
-                    && w.TypesOfLogisticsPenaltiesAndAdjustments.Contains("Оказание услуг «WB Продвижение»", StringComparison.CurrentCultureIgnoreCase)
+                    && (w.TypesOfLogisticsPenaltiesAndAdjustments.Contains("Оказание услуг «WB Продвижение»", StringComparison.CurrentCultureIgnoreCase) 
+                        || w.TypesOfLogisticsPenaltiesAndAdjustments.Contains("Предоставление услуг по подписке «Джем»", StringComparison.CurrentCultureIgnoreCase))
                     && !string.IsNullOrEmpty(w.Withholdings))
                 .Sum(w => GetParsedDecimal(w.Withholdings, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.Withholdings))));
 
@@ -111,7 +112,7 @@ namespace ExcelWebApp2.Repositories.Processing
                             .Count(x => x.TypesOfLogisticsPenaltiesAndAdjustments.Equals("К клиенту при отмене", StringComparison.OrdinalIgnoreCase));
 
                         var paidAcceptanceSumm = group
-                            .Where(x => string.IsNullOrWhiteSpace(x.DocumentType) && x.PaymentReason.Equals("Платная приемка", StringComparison.OrdinalIgnoreCase))
+                            .Where(x => x.PaymentReason.Equals("Платная приемка", StringComparison.OrdinalIgnoreCase) || x.PaymentReason.Equals("Обработка товара", StringComparison.OrdinalIgnoreCase))
                             .Sum(x => GetParsedDecimal(x.PaidAcceptance, LabelOf<AccrualRecordWbModel>(nameof(AccrualRecordWbModel.PaidAcceptance))));
 
                         var payableFinesSumm = group
@@ -145,8 +146,18 @@ namespace ExcelWebApp2.Repositories.Processing
                         var cancellationMaterialDamageCost = Math.Round(cancellationCount * (materialCost ?? 0) * returnCancellationMaterialDamagePercent / 100, 3);
                         var cancellationWorkCost = cancellationCount * (workCost ?? 0);
 
-                        var netProfit = Math.Round(amountPayableToSellerSumm - allWorkCost - allMaterialCost - logisticSumm - paidAcceptanceSumm -
-                            payableFinesSumm - returnSumm + (returnQuantity * (materialCost ?? 0)) - returnWorkCost - returnMaterialDamageCost - cancellationWorkCost - cancellationMaterialDamageCost, 3);
+                        var netProfit = Math.Round(
+                            (returnQuantity * (materialCost ?? 0)) + amountPayableToSellerSumm 
+                                - allWorkCost 
+                                - allMaterialCost 
+                                - logisticSumm 
+                                - paidAcceptanceSumm 
+                                - payableFinesSumm 
+                                - returnSumm 
+                                - returnWorkCost 
+                                - returnMaterialDamageCost 
+                                - cancellationWorkCost 
+                                - cancellationMaterialDamageCost, 3);
 
                         return new ProcessedWbResultModel
                         {
