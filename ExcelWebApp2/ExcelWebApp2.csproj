@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <FrontendRoot>..\excelUi</FrontendRoot>
+    <BuildFrontendOnPublish>false</BuildFrontendOnPublish>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,7 +13,7 @@
     <PackageReference Include="NSwag.AspNetCore" Version="14.7.1" />
   </ItemGroup>
 
-  <Target Name="BuildFrontend" BeforeTargets="ComputeFilesToPublish" Condition="'$(SkipFrontendBuild)' != 'true'">
+  <Target Name="BuildFrontend" BeforeTargets="ComputeFilesToPublish" Condition="'$(BuildFrontendOnPublish)' == 'true'">
     <Message Importance="high" Text="Building frontend assets..." />
     <Exec WorkingDirectory="$(FrontendRoot)" Command="npm ci" />
     <Exec WorkingDirectory="$(FrontendRoot)" Command="npm run build" />
