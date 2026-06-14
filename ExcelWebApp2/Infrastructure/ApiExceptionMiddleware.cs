@@ -1,4 +1,5 @@
 using System.Net;
+using Npgsql;
 
 namespace ExcelWebApp2.Infrastructure
 {
@@ -13,6 +14,11 @@ namespace ExcelWebApp2.Infrastructure
             catch (ApiException exception)
             {
                 await WriteErrorResponse(context, GetStatusCode(exception.Category), exception.Message);
+            }
+            catch (Exception exception) when (IsDatabaseException(exception))
+            {
+                logger.LogWarning(exception, "Database is unavailable");
+                await WriteErrorResponse(context, HttpStatusCode.ServiceUnavailable, "Database is unavailable.");
             }
             catch (Exception exception)
             {
@@ -30,8 +36,22 @@ namespace ExcelWebApp2.Infrastructure
                 ApiExceptionCategory.Forbidden => HttpStatusCode.Forbidden,
                 ApiExceptionCategory.Unauthorized => HttpStatusCode.Unauthorized,
                 ApiExceptionCategory.Conflict => HttpStatusCode.Conflict,
+                ApiExceptionCategory.ServiceUnavailable => HttpStatusCode.ServiceUnavailable,
                 _ => HttpStatusCode.InternalServerError
             };
+        }
+
+        private static bool IsDatabaseException(Exception exception)
+        {
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                if (current is NpgsqlException)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static async Task WriteErrorResponse(HttpContext context, HttpStatusCode statusCode, string message)

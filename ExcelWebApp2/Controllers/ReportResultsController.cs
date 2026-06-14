@@ -1,11 +1,13 @@
 using ExcelWebApp2.Infrastructure;
 using ExcelWebApp2.Models;
 using ExcelWebApp2.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExcelWebApp2.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/v1/[controller]/[action]")]
     public class ReportResultsController(ProcessorRepository processorRepository) : ControllerBase
     {

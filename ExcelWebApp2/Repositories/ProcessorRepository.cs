@@ -1,3 +1,4 @@
+using ExcelWebApp2.Infrastructure;
 using ExcelWebApp2.Models;
 using ExcelWebApp2.Repositories.Processing;
 
@@ -6,49 +7,34 @@ namespace ExcelWebApp2.Repositories
     public class ProcessorRepository(
         IOzonV1Processor ozonV1Processor,
         IOzonV2Processor ozonV2Processor,
-        IWildberriesProcessor wildberriesProcessor)
+        IWildberriesProcessor wildberriesProcessor,
+        IProcessingSessionStore sessionStore,
+        ICurrentUserContext currentUserContext)
     {
-        private List<AccrualRecordV1Model> _accrualsV1 = [];
-        private List<AccrualRecordV2Model> _accrualsV2 = [];
-        private List<AccrualRecordWbModel> _accrualsWb = [];
-        private List<WbCancellationModel> _wbCancellations = [];
-        private List<AdvertisingModel> _ads = [];
-        private List<PrimeCostModel> _primeCosts = [];
-        private List<PrimeCostWbModel> _primeCostWbModels = [];
-        private List<ProcessedOzonResultV1Model> _processedResultsV1 = [];
-        private List<ProcessedOzonResultV2Model> _processedResultsV2 = [];
-        private List<ProcessedWbResultModel> _processedResultsWb = [];
+        private ProcessingSessionState State => sessionStore.Get(currentUserContext.UserId);
 
-        public void SetAccrualsV1(List<AccrualRecordV1Model> accruals) => _accrualsV1 = accruals;
-        public void SetAccrualsV2(List<AccrualRecordV2Model> accruals) => _accrualsV2 = accruals;
-        public void SetAccrualsWb(List<AccrualRecordWbModel> accruals) => _accrualsWb = accruals;
-        public void SetWbCancellations(List<WbCancellationModel> cancellations) => _wbCancellations = cancellations;
-        public void SetAds(List<AdvertisingModel> ads) => _ads = ads;
-        public void SetPrimeCosts(List<PrimeCostModel> costs) => _primeCosts = costs;
-        public void SetPrimeCostsWb(List<PrimeCostWbModel> costs) => _primeCostWbModels = costs;
+        public void SetAccrualsV1(List<AccrualRecordV1Model> accruals) => State.AccrualsV1 = accruals;
+        public void SetAccrualsV2(List<AccrualRecordV2Model> accruals) => State.AccrualsV2 = accruals;
+        public void SetAccrualsWb(List<AccrualRecordWbModel> accruals) => State.AccrualsWb = accruals;
+        public void SetWbCancellations(List<WbCancellationModel> cancellations) => State.WbCancellations = cancellations;
+        public void SetAds(List<AdvertisingModel> ads) => State.Ads = ads;
+        public void SetPrimeCosts(List<PrimeCostModel> costs) => State.PrimeCosts = costs;
+        public void SetPrimeCostsWb(List<PrimeCostWbModel> costs) => State.PrimeCostWbModels = costs;
 
         public bool HasAllInputs(ProcessingType processingType)
         {
             return processingType switch
             {
-                ProcessingType.OzonV1 => _accrualsV1.Count != 0 && _ads.Count != 0 && _primeCosts.Count != 0,
-                ProcessingType.OzonV2 => _accrualsV2.Count != 0 && _primeCosts.Count != 0,
-                ProcessingType.Wildberries => _accrualsWb.Count != 0 && _primeCostWbModels.Count != 0,
+                ProcessingType.OzonV1 => State.AccrualsV1.Count != 0 && State.Ads.Count != 0 && State.PrimeCosts.Count != 0,
+                ProcessingType.OzonV2 => State.AccrualsV2.Count != 0 && State.PrimeCosts.Count != 0,
+                ProcessingType.Wildberries => State.AccrualsWb.Count != 0 && State.PrimeCostWbModels.Count != 0,
                 _ => throw new NotImplementedException(),
             };
         }
 
         public void Clear()
         {
-            _accrualsV1.Clear();
-            _accrualsV2.Clear();
-            _ads.Clear();
-            _primeCosts.Clear();
-            _processedResultsV1.Clear();
-            _processedResultsV2.Clear();
-            _accrualsWb.Clear();
-            _wbCancellations.Clear();
-            _primeCostWbModels.Clear();
+            sessionStore.Clear(currentUserContext.UserId);
         }
 
         public string GetMissingInputs(ProcessingType processingType)
@@ -58,17 +44,17 @@ namespace ExcelWebApp2.Repositories
             switch (processingType)
             {
                 case ProcessingType.OzonV1:
-                    if (_primeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
-                    if (_accrualsV1.Count == 0) missing.Add("Файл отчёта по товарам отсутствует");
-                    if (_ads.Count == 0) missing.Add("Файл рекламы отсутствует");
+                    if (State.PrimeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    if (State.AccrualsV1.Count == 0) missing.Add("Файл отчета по товарам отсутствует");
+                    if (State.Ads.Count == 0) missing.Add("Файл рекламы отсутствует");
                     break;
                 case ProcessingType.OzonV2:
-                    if (_primeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
-                    if (_accrualsV2.Count == 0) missing.Add("Файл отчёта по товарам отсутствует");
+                    if (State.PrimeCosts.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    if (State.AccrualsV2.Count == 0) missing.Add("Файл отчета по товарам отсутствует");
                     break;
                 case ProcessingType.Wildberries:
-                    if (_accrualsWb.Count == 0) missing.Add("Файлы отчётов по товарам отсутствует");
-                    if (_primeCostWbModels.Count == 0) missing.Add("Файл себестоимости отсутствует");
+                    if (State.AccrualsWb.Count == 0) missing.Add("Файлы отчетов по товарам отсутствуют");
+                    if (State.PrimeCostWbModels.Count == 0) missing.Add("Файл себестоимости отсутствует");
                     break;
                 default:
                     throw new NotImplementedException();
@@ -79,20 +65,21 @@ namespace ExcelWebApp2.Repositories
 
         public List<ProcessedOzonResultV1Model> ProcessOzonV1()
         {
-            _processedResultsV1 = ozonV1Processor.Process(_accrualsV1, _ads, _primeCosts);
-            return _processedResultsV1;
+            return ozonV1Processor.Process(State.AccrualsV1, State.Ads, State.PrimeCosts);
         }
 
         public List<ProcessedOzonResultV2Model> ProcessOzonV2()
         {
-            _processedResultsV2 = ozonV2Processor.Process(_accrualsV2, _primeCosts);
-            return _processedResultsV2;
+            return ozonV2Processor.Process(State.AccrualsV2, State.PrimeCosts);
         }
 
         public List<ProcessedWbResultModel> ProcessWb(decimal returnMaterialDamagePercent)
         {
-            _processedResultsWb = wildberriesProcessor.Process(_accrualsWb, _primeCostWbModels, _wbCancellations, returnMaterialDamagePercent);
-            return _processedResultsWb;
+            return wildberriesProcessor.Process(
+                State.AccrualsWb,
+                State.PrimeCostWbModels,
+                State.WbCancellations,
+                returnMaterialDamagePercent);
         }
     }
 }

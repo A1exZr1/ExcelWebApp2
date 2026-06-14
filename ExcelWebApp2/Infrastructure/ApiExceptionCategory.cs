@@ -6,6 +6,7 @@ namespace ExcelWebApp2.Infrastructure
         NotFound,
         Forbidden,
         Unauthorized,
-        Conflict
+        Conflict,
+        ServiceUnavailable
     }
 }

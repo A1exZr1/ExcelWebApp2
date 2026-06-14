@@ -1,4 +1,5 @@
 import {
+  AuthClient,
   ReportExportClient,
   ReportFilesClient,
   ReportResultsClient,
@@ -7,6 +8,7 @@ import {
   type FileResponse,
 } from './client'
 
+export const authClient = new AuthClient()
 export const reportExportClient = new ReportExportClient()
 export const reportFilesClient = new ReportFilesClient()
 export const reportResultsClient = new ReportResultsClient()

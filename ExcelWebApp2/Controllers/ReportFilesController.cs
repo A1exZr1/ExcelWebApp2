@@ -1,12 +1,14 @@
 using ExcelWebApp2.Infrastructure;
 using ExcelWebApp2.Models;
 using ExcelWebApp2.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NSwag.Annotations;
 
 namespace ExcelWebApp2.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/v1/[controller]/[action]")]
     public class ReportFilesController(FileReaderRepository fileReaderRepository, ProcessorRepository processorRepository) : ControllerBase
     {
